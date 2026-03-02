@@ -1,0 +1,50 @@
+{
+  "buckets": {
+    "cpu_only": {
+      "allowNet": false,
+      "allowFsRead": ["./node_modules"],
+      "allowFsWrite": [],
+      "allowChildProcess": false,
+      "allowWorker": false,
+      "allowAddons": false,
+      "allowWasi": false,
+      "allowInspector": false
+    },
+    "restricted_net": {
+      "allowNet": false,
+      "allowFsRead": ["./node_modules"],
+      "allowFsWrite": [],
+      "allowChildProcess": false,
+      "allowWorker": false,
+      "allowAddons": false,
+      "allowWasi": false,
+      "allowInspector": false
+    },
+    "open_net": {
+      "allowNet": true,
+      "allowFsRead": ["./node_modules"],
+      "allowFsWrite": [],
+      "allowChildProcess": false,
+      "allowWorker": false,
+      "allowAddons": false,
+      "allowWasi": false,
+      "allowInspector": false
+    }
+  },
+  "packages": {
+    "sandboxed-lib": "cpu_only",
+    "sideeffect-lib": "cpu_only"
+  },
+  "importerRules": [
+    {
+      "importer": "__PROJECT_DIR_URL__/restricted*",
+      "specifier": "sandboxed-lib",
+      "bucket": "restricted_net"
+    },
+    {
+      "importer": "__PROJECT_DIR_URL__/open*",
+      "specifier": "sandboxed-lib",
+      "bucket": "open_net"
+    }
+  ]
+}

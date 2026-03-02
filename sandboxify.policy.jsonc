@@ -1,0 +1,18 @@
+{
+  // Minimal sample policy
+  "buckets": {
+    "cpu_only": {
+      "allowNet": false,
+      "allowFsRead": ["./node_modules"],
+      "allowFsWrite": [],
+      "allowChildProcess": false,
+      "allowWorker": false,
+      "allowAddons": false,
+      "allowWasi": false,
+      "allowInspector": false
+    }
+  },
+  "packages": {
+    "*": "cpu_only"
+  }
+}

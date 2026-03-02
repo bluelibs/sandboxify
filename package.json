@@ -1,0 +1,33 @@
+{
+  "name": "sandboxify",
+  "version": "0.1.0",
+  "description": "MVP ESM dependency sandboxing for Node 25",
+  "type": "module",
+  "main": "./src/index.js",
+  "bin": {
+    "sandboxify": "./src/cli/index.js"
+  },
+  "exports": {
+    ".": "./src/index.js",
+    "./loader": "./src/loader/index.js",
+    "./runtime": "./src/runtime/index.js",
+    "./manifest": "./src/manifest/index.js",
+    "./policy": "./src/policy/index.js",
+    "./register": "./register.mjs",
+    "./register-cjs": "./register-cjs.cjs"
+  },
+    "imports": {
+      "#sandboxify-bench-target": "./bench/fixtures/bench-target/index.mjs"
+    },
+  "scripts": {
+    "test": "node --test --test-timeout=30000 test/*.test.js",
+    "build-manifest": "node ./src/cli/index.js build-manifest",
+    "doctor": "node ./src/cli/index.js doctor",
+      "bench": "npm run bench:smoke",
+      "bench:smoke": "node ./bench/run.mjs --profile smoke",
+      "bench:full": "node ./bench/run.mjs --profile full"
+  },
+  "engines": {
+    "node": ">=25"
+  }
+}

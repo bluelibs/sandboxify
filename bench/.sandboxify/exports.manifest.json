@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "generatedAt": "2026-03-02T15:25:03.766Z",
+  "nodeVersion": "v25.7.0",
+  "entriesByUrl": {
+    "file:///Users/theodordiaconu/Projects/node-sec/bench/fixtures/bench-target/index.mjs": {
+      "package": "#sandboxify-bench-target",
+      "specifier": "#sandboxify-bench-target",
+      "realUrl": "file:///Users/theodordiaconu/Projects/node-sec/bench/fixtures/bench-target/index.mjs",
+      "exportNames": [
+        "echoPayload",
+        "rpcNoop"
+      ],
+      "generatedAt": "2026-03-02T15:25:03.765Z"
+    }
+  },
+  "entriesBySpecifier": {
+    "#sandboxify-bench-target": {
+      "package": "#sandboxify-bench-target",
+      "realUrl": "file:///Users/theodordiaconu/Projects/node-sec/bench/fixtures/bench-target/index.mjs",
+      "exportNames": [
+        "echoPayload",
+        "rpcNoop"
+      ]
+    }
+  }
+}

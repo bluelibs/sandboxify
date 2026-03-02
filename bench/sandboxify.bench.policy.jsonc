@@ -1,0 +1,15 @@
+{
+  "buckets": {
+    "bench_cpu": {
+      "allowNet": false,
+      "allowFsRead": ["./bench", "./node_modules"],
+      "allowFsWrite": [],
+      "allowChildProcess": false,
+      "allowWorker": false,
+      "allowAddons": false
+    }
+  },
+  "packages": {
+    "#sandboxify-bench-target": "bench_cpu"
+  }
+}
