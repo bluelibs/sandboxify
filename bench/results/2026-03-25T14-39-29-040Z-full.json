@@ -1,0 +1,2927 @@
+{
+  "version": 1,
+  "generatedAt": "2026-03-25T14:39:29.040Z",
+  "profile": "full",
+  "nodeVersion": "v25.7.0",
+  "benchmarkConfig": {
+    "ipcBlobThresholdBytes": null
+  },
+  "runs": [
+    {
+      "mode": "native",
+      "scenario": "rpc-noop",
+      "payloadType": null,
+      "payloadSizeBytes": null,
+      "iterations": 30000,
+      "iterationGroups": 30000,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 3297654.573627028
+      },
+      "latencyMs": {
+        "p50": 0.0001659393310546875,
+        "p95": 0.0002090930938720703,
+        "p99": 0.0003750324249267578,
+        "max": 0.2880418300628662
+      },
+      "cpu": {
+        "userMicrosPerOp": 0.3448,
+        "systemMicrosPerOp": 0.052333333333333336
+      },
+      "memory": {
+        "parentRssPeakMb": 58.65625,
+        "childRssMb": null
+      },
+      "bytesReturned": 0
+    },
+    {
+      "mode": "bypass",
+      "scenario": "rpc-noop",
+      "payloadType": null,
+      "payloadSizeBytes": null,
+      "iterations": 30000,
+      "iterationGroups": 30000,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 3460307.4005363667
+      },
+      "latencyMs": {
+        "p50": 0.0001659393310546875,
+        "p95": 0.00020885467529296875,
+        "p99": 0.00033402442932128906,
+        "max": 0.2868340015411377
+      },
+      "cpu": {
+        "userMicrosPerOp": 0.3278,
+        "systemMicrosPerOp": 0.04296666666666667
+      },
+      "memory": {
+        "parentRssPeakMb": 60.90625,
+        "childRssMb": null
+      },
+      "bytesReturned": 0
+    },
+    {
+      "mode": "sandbox",
+      "scenario": "rpc-noop",
+      "payloadType": null,
+      "payloadSizeBytes": null,
+      "iterations": 30000,
+      "iterationGroups": 30000,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 19253.984575554616
+      },
+      "latencyMs": {
+        "p50": 0.039229512214660645,
+        "p95": 0.084041166305542,
+        "p99": 0.20972714662551573,
+        "max": 20.39595890045166
+      },
+      "cpu": {
+        "userMicrosPerOp": 17.484966666666665,
+        "systemMicrosPerOp": 7.636466666666666
+      },
+      "memory": {
+        "parentRssPeakMb": 86.890625,
+        "childRssMb": null
+      },
+      "bytesReturned": 0
+    },
+    {
+      "mode": "native",
+      "scenario": "rpc-batch-noop-32",
+      "payloadType": null,
+      "payloadSizeBytes": null,
+      "iterations": 96000,
+      "iterationGroups": 3000,
+      "batchSize": 32,
+      "throughput": {
+        "opsPerSec": 13667425.641510248
+      },
+      "latencyMs": {
+        "p50": 0.001332998275756836,
+        "p95": 0.002583074569702148,
+        "p99": 0.026254467964172256,
+        "max": 0.33808398246765137
+      },
+      "cpu": {
+        "userMicrosPerOp": 0.09540625,
+        "systemMicrosPerOp": 0.014645833333333334
+      },
+      "memory": {
+        "parentRssPeakMb": 56.46875,
+        "childRssMb": null
+      },
+      "bytesReturned": 0
+    },
+    {
+      "mode": "bypass",
+      "scenario": "rpc-batch-noop-32",
+      "payloadType": null,
+      "payloadSizeBytes": null,
+      "iterations": 96000,
+      "iterationGroups": 3000,
+      "batchSize": 32,
+      "throughput": {
+        "opsPerSec": 15374351.286925929
+      },
+      "latencyMs": {
+        "p50": 0.001332998275756836,
+        "p95": 0.002666950225830078,
+        "p99": 0.009426226615905545,
+        "max": 0.2945840358734131
+      },
+      "cpu": {
+        "userMicrosPerOp": 0.08678125,
+        "systemMicrosPerOp": 0.011041666666666667
+      },
+      "memory": {
+        "parentRssPeakMb": 60.921875,
+        "childRssMb": null
+      },
+      "bytesReturned": 0
+    },
+    {
+      "mode": "sandbox",
+      "scenario": "rpc-batch-noop-32",
+      "payloadType": null,
+      "payloadSizeBytes": null,
+      "iterations": 96000,
+      "iterationGroups": 3000,
+      "batchSize": 32,
+      "throughput": {
+        "opsPerSec": 497922.7289268825
+      },
+      "latencyMs": {
+        "p50": 0.05193758010864258,
+        "p95": 0.11047669649124135,
+        "p99": 0.27273247003555046,
+        "max": 1.5445830821990967
+      },
+      "cpu": {
+        "userMicrosPerOp": 0.900125,
+        "systemMicrosPerOp": 0.27639583333333334
+      },
+      "memory": {
+        "parentRssPeakMb": 64.53125,
+        "childRssMb": null
+      },
+      "bytesReturned": 0
+    },
+    {
+      "mode": "native",
+      "scenario": "echo-payload",
+      "payloadType": "buffer",
+      "payloadSizeBytes": 0,
+      "iterations": 1200,
+      "iterationGroups": 1200,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 1032961.70778505
+      },
+      "latencyMs": {
+        "p50": 0.00029206275939941406,
+        "p95": 0.0013770103454589825,
+        "p99": 0.005752022266387938,
+        "max": 0.3055419921875
+      },
+      "cpu": {
+        "userMicrosPerOp": 1.4083333333333334,
+        "systemMicrosPerOp": 0.29083333333333333
+      },
+      "memory": {
+        "parentRssPeakMb": 51.5,
+        "childRssMb": null
+      },
+      "bytesReturned": 0
+    },
+    {
+      "mode": "native",
+      "scenario": "echo-payload",
+      "payloadType": "buffer",
+      "payloadSizeBytes": 256,
+      "iterations": 1200,
+      "iterationGroups": 1200,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 1548971.1204667997
+      },
+      "latencyMs": {
+        "p50": 0.00025010108947753906,
+        "p95": 0.00029206275939941406,
+        "p99": 0.0016719079017639108,
+        "max": 0.22645807266235352
+      },
+      "cpu": {
+        "userMicrosPerOp": 0.8516666666666667,
+        "systemMicrosPerOp": 0.0925
+      },
+      "memory": {
+        "parentRssPeakMb": 52.21875,
+        "childRssMb": null
+      },
+      "bytesReturned": 307200
+    },
+    {
+      "mode": "native",
+      "scenario": "echo-payload",
+      "payloadType": "buffer",
+      "payloadSizeBytes": 1024,
+      "iterations": 1200,
+      "iterationGroups": 1200,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 2549123.2326260884
+      },
+      "latencyMs": {
+        "p50": 0.0002090930938720703,
+        "p95": 0.00025010108947753906,
+        "p99": 0.0003330707550048828,
+        "max": 0.06800007820129395
+      },
+      "cpu": {
+        "userMicrosPerOp": 0.38666666666666666,
+        "systemMicrosPerOp": 0.020833333333333332
+      },
+      "memory": {
+        "parentRssPeakMb": 52.21875,
+        "childRssMb": null
+      },
+      "bytesReturned": 1228800
+    },
+    {
+      "mode": "native",
+      "scenario": "echo-payload",
+      "payloadType": "buffer",
+      "payloadSizeBytes": 4096,
+      "iterations": 1200,
+      "iterationGroups": 1200,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 2657072.448649916
+      },
+      "latencyMs": {
+        "p50": 0.0002090930938720703,
+        "p95": 0.00025010108947753906,
+        "p99": 0.00033308029174804687,
+        "max": 0.04416680335998535
+      },
+      "cpu": {
+        "userMicrosPerOp": 0.37916666666666665,
+        "systemMicrosPerOp": 0.025833333333333333
+      },
+      "memory": {
+        "parentRssPeakMb": 52.21875,
+        "childRssMb": null
+      },
+      "bytesReturned": 4915200
+    },
+    {
+      "mode": "native",
+      "scenario": "echo-payload",
+      "payloadType": "buffer",
+      "payloadSizeBytes": 16384,
+      "iterations": 1200,
+      "iterationGroups": 1200,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 1792939.4766483782
+      },
+      "latencyMs": {
+        "p50": 0.0002498626708984375,
+        "p95": 0.00025010108947753906,
+        "p99": 0.0003750324249267578,
+        "max": 0.04133415222167969
+      },
+      "cpu": {
+        "userMicrosPerOp": 0.9458333333333333,
+        "systemMicrosPerOp": 0.4025
+      },
+      "memory": {
+        "parentRssPeakMb": 54.46875,
+        "childRssMb": null
+      },
+      "bytesReturned": 19660800
+    },
+    {
+      "mode": "native",
+      "scenario": "echo-payload",
+      "payloadType": "buffer",
+      "payloadSizeBytes": 65536,
+      "iterations": 1200,
+      "iterationGroups": 1200,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 2907033.3116742475
+      },
+      "latencyMs": {
+        "p50": 0.0002079010009765625,
+        "p95": 0.0002090930938720703,
+        "p99": 0.00029247045516967736,
+        "max": 0.06500005722045898
+      },
+      "cpu": {
+        "userMicrosPerOp": 0.4891666666666667,
+        "systemMicrosPerOp": 0.0775
+      },
+      "memory": {
+        "parentRssPeakMb": 56.390625,
+        "childRssMb": null
+      },
+      "bytesReturned": 78643200
+    },
+    {
+      "mode": "native",
+      "scenario": "echo-payload",
+      "payloadType": "buffer",
+      "payloadSizeBytes": 262144,
+      "iterations": 1200,
+      "iterationGroups": 1200,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 3220396.9282782925
+      },
+      "latencyMs": {
+        "p50": 0.0002079010009765625,
+        "p95": 0.0002090930938720703,
+        "p99": 0.00029206275939941406,
+        "max": 0.04720783233642578
+      },
+      "cpu": {
+        "userMicrosPerOp": 0.3,
+        "systemMicrosPerOp": 0.013333333333333334
+      },
+      "memory": {
+        "parentRssPeakMb": 56.390625,
+        "childRssMb": null
+      },
+      "bytesReturned": 314572800
+    },
+    {
+      "mode": "native",
+      "scenario": "echo-payload",
+      "payloadType": "buffer",
+      "payloadSizeBytes": 1048576,
+      "iterations": 1200,
+      "iterationGroups": 1200,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 3277935.326558417
+      },
+      "latencyMs": {
+        "p50": 0.0002079010009765625,
+        "p95": 0.0002090930938720703,
+        "p99": 0.00025010108947753906,
+        "max": 0.04958295822143555
+      },
+      "cpu": {
+        "userMicrosPerOp": 0.29083333333333333,
+        "systemMicrosPerOp": 0.021666666666666667
+      },
+      "memory": {
+        "parentRssPeakMb": 57.375,
+        "childRssMb": null
+      },
+      "bytesReturned": 1258291200
+    },
+    {
+      "mode": "native",
+      "scenario": "echo-payload",
+      "payloadType": "buffer",
+      "payloadSizeBytes": 4194304,
+      "iterations": 1200,
+      "iterationGroups": 1200,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 2475931.32159637
+      },
+      "latencyMs": {
+        "p50": 0.00020885467529296875,
+        "p95": 0.00025010108947753906,
+        "p99": 0.0006675148010253902,
+        "max": 0.02245807647705078
+      },
+      "cpu": {
+        "userMicrosPerOp": 0.565,
+        "systemMicrosPerOp": 0.041666666666666664
+      },
+      "memory": {
+        "parentRssPeakMb": 61.46875,
+        "childRssMb": null
+      },
+      "bytesReturned": 5033164800
+    },
+    {
+      "mode": "native",
+      "scenario": "echo-payload",
+      "payloadType": "buffer",
+      "payloadSizeBytes": 10485760,
+      "iterations": 1200,
+      "iterationGroups": 1200,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 2656337.6356888623
+      },
+      "latencyMs": {
+        "p50": 0.0002498626708984375,
+        "p95": 0.00025010108947753906,
+        "p99": 0.00033443212509155236,
+        "max": 0.04166722297668457
+      },
+      "cpu": {
+        "userMicrosPerOp": 0.4558333333333333,
+        "systemMicrosPerOp": 0.028333333333333332
+      },
+      "memory": {
+        "parentRssPeakMb": 71.515625,
+        "childRssMb": null
+      },
+      "bytesReturned": 12582912000
+    },
+    {
+      "mode": "native",
+      "scenario": "echo-payload",
+      "payloadType": "buffer",
+      "payloadSizeBytes": 16777216,
+      "iterations": 1200,
+      "iterationGroups": 1200,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 2200490.7112865346
+      },
+      "latencyMs": {
+        "p50": 0.0002090930938720703,
+        "p95": 0.00025010108947753906,
+        "p99": 0.00033402442932128906,
+        "max": 0.10995888710021973
+      },
+      "cpu": {
+        "userMicrosPerOp": 0.5558333333333333,
+        "systemMicrosPerOp": 0.056666666666666664
+      },
+      "memory": {
+        "parentRssPeakMb": 87.65625,
+        "childRssMb": null
+      },
+      "bytesReturned": 20132659200
+    },
+    {
+      "mode": "native",
+      "scenario": "echo-payload",
+      "payloadType": "uint8array",
+      "payloadSizeBytes": 0,
+      "iterations": 1200,
+      "iterationGroups": 1200,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 1835564.214197823
+      },
+      "latencyMs": {
+        "p50": 0.00025010108947753906,
+        "p95": 0.00029206275939941406,
+        "p99": 0.0019227170944213813,
+        "max": 0.05566716194152832
+      },
+      "cpu": {
+        "userMicrosPerOp": 0.7966666666666666,
+        "systemMicrosPerOp": 0.06333333333333334
+      },
+      "memory": {
+        "parentRssPeakMb": 87.8125,
+        "childRssMb": null
+      },
+      "bytesReturned": 0
+    },
+    {
+      "mode": "native",
+      "scenario": "echo-payload",
+      "payloadType": "uint8array",
+      "payloadSizeBytes": 256,
+      "iterations": 1200,
+      "iterationGroups": 1200,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 1463712.6599002103
+      },
+      "latencyMs": {
+        "p50": 0.00020885467529296875,
+        "p95": 0.0002911090850830078,
+        "p99": 0.0005840110778808586,
+        "max": 0.1738748550415039
+      },
+      "cpu": {
+        "userMicrosPerOp": 0.8141666666666667,
+        "systemMicrosPerOp": 0.15
+      },
+      "memory": {
+        "parentRssPeakMb": 87.828125,
+        "childRssMb": null
+      },
+      "bytesReturned": 307200
+    },
+    {
+      "mode": "native",
+      "scenario": "echo-payload",
+      "payloadType": "uint8array",
+      "payloadSizeBytes": 1024,
+      "iterations": 1200,
+      "iterationGroups": 1200,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 2408830.59004606
+      },
+      "latencyMs": {
+        "p50": 0.0002079010009765625,
+        "p95": 0.0002498626708984375,
+        "p99": 0.0003330707550048828,
+        "max": 0.019500017166137695
+      },
+      "cpu": {
+        "userMicrosPerOp": 0.5066666666666667,
+        "systemMicrosPerOp": 0.04666666666666667
+      },
+      "memory": {
+        "parentRssPeakMb": 87.828125,
+        "childRssMb": null
+      },
+      "bytesReturned": 1228800
+    },
+    {
+      "mode": "native",
+      "scenario": "echo-payload",
+      "payloadType": "uint8array",
+      "payloadSizeBytes": 4096,
+      "iterations": 1200,
+      "iterationGroups": 1200,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 3228697.452793152
+      },
+      "latencyMs": {
+        "p50": 0.0002079010009765625,
+        "p95": 0.0002090930938720703,
+        "p99": 0.00029206275939941406,
+        "max": 0.0017921924591064453
+      },
+      "cpu": {
+        "userMicrosPerOp": 0.3016666666666667,
+        "systemMicrosPerOp": 0.019166666666666665
+      },
+      "memory": {
+        "parentRssPeakMb": 87.828125,
+        "childRssMb": null
+      },
+      "bytesReturned": 4915200
+    },
+    {
+      "mode": "native",
+      "scenario": "echo-payload",
+      "payloadType": "uint8array",
+      "payloadSizeBytes": 16384,
+      "iterations": 1200,
+      "iterationGroups": 1200,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 3487104.647819505
+      },
+      "latencyMs": {
+        "p50": 0.0001671314239501953,
+        "p95": 0.0002090930938720703,
+        "p99": 0.00020950078964233361,
+        "max": 0.039875030517578125
+      },
+      "cpu": {
+        "userMicrosPerOp": 0.28,
+        "systemMicrosPerOp": 0.013333333333333334
+      },
+      "memory": {
+        "parentRssPeakMb": 87.828125,
+        "childRssMb": null
+      },
+      "bytesReturned": 19660800
+    },
+    {
+      "mode": "native",
+      "scenario": "echo-payload",
+      "payloadType": "uint8array",
+      "payloadSizeBytes": 65536,
+      "iterations": 1200,
+      "iterationGroups": 1200,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 3163097.3583691446
+      },
+      "latencyMs": {
+        "p50": 0.0001671314239501953,
+        "p95": 0.0002090930938720703,
+        "p99": 0.0002498650550842285,
+        "max": 0.04720783233642578
+      },
+      "cpu": {
+        "userMicrosPerOp": 0.4508333333333333,
+        "systemMicrosPerOp": 0.0325
+      },
+      "memory": {
+        "parentRssPeakMb": 87.890625,
+        "childRssMb": null
+      },
+      "bytesReturned": 78643200
+    },
+    {
+      "mode": "native",
+      "scenario": "echo-payload",
+      "payloadType": "uint8array",
+      "payloadSizeBytes": 262144,
+      "iterations": 1200,
+      "iterationGroups": 1200,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 3227620.808975737
+      },
+      "latencyMs": {
+        "p50": 0.0001671314239501953,
+        "p95": 0.0002090930938720703,
+        "p99": 0.00029206275939941406,
+        "max": 0.04050016403198242
+      },
+      "cpu": {
+        "userMicrosPerOp": 0.6933333333333334,
+        "systemMicrosPerOp": 0.04
+      },
+      "memory": {
+        "parentRssPeakMb": 88.03125,
+        "childRssMb": null
+      },
+      "bytesReturned": 314572800
+    },
+    {
+      "mode": "native",
+      "scenario": "echo-payload",
+      "payloadType": "uint8array",
+      "payloadSizeBytes": 1048576,
+      "iterations": 1200,
+      "iterationGroups": 1200,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 3505358.0146658877
+      },
+      "latencyMs": {
+        "p50": 0.0001671314239501953,
+        "p95": 0.0002090930938720703,
+        "p99": 0.00025010108947753906,
+        "max": 0.03912520408630371
+      },
+      "cpu": {
+        "userMicrosPerOp": 0.4525,
+        "systemMicrosPerOp": 0.023333333333333334
+      },
+      "memory": {
+        "parentRssPeakMb": 88.25,
+        "childRssMb": null
+      },
+      "bytesReturned": 1258291200
+    },
+    {
+      "mode": "native",
+      "scenario": "echo-payload",
+      "payloadType": "uint8array",
+      "payloadSizeBytes": 4194304,
+      "iterations": 1200,
+      "iterationGroups": 1200,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 3173554.119211511
+      },
+      "latencyMs": {
+        "p50": 0.0001671314239501953,
+        "p95": 0.0002090930938720703,
+        "p99": 0.00025010108947753906,
+        "max": 0.04500007629394531
+      },
+      "cpu": {
+        "userMicrosPerOp": 0.6983333333333334,
+        "systemMicrosPerOp": 0.0325
+      },
+      "memory": {
+        "parentRssPeakMb": 88.296875,
+        "childRssMb": null
+      },
+      "bytesReturned": 5033164800
+    },
+    {
+      "mode": "native",
+      "scenario": "echo-payload",
+      "payloadType": "uint8array",
+      "payloadSizeBytes": 10485760,
+      "iterations": 1200,
+      "iterationGroups": 1200,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 3713252.18007171
+      },
+      "latencyMs": {
+        "p50": 0.00016689300537109375,
+        "p95": 0.0001671314239501953,
+        "p99": 0.0002918267250061035,
+        "max": 0.03966689109802246
+      },
+      "cpu": {
+        "userMicrosPerOp": 0.265,
+        "systemMicrosPerOp": 0.025
+      },
+      "memory": {
+        "parentRssPeakMb": 88.296875,
+        "childRssMb": null
+      },
+      "bytesReturned": 12582912000
+    },
+    {
+      "mode": "native",
+      "scenario": "echo-payload",
+      "payloadType": "uint8array",
+      "payloadSizeBytes": 16777216,
+      "iterations": 1200,
+      "iterationGroups": 1200,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 3747074.987436952
+      },
+      "latencyMs": {
+        "p50": 0.00016689300537109375,
+        "p95": 0.0001671314239501953,
+        "p99": 0.00025010108947753906,
+        "max": 0.03845810890197754
+      },
+      "cpu": {
+        "userMicrosPerOp": 0.2608333333333333,
+        "systemMicrosPerOp": 0.015
+      },
+      "memory": {
+        "parentRssPeakMb": 88.296875,
+        "childRssMb": null
+      },
+      "bytesReturned": 20132659200
+    },
+    {
+      "mode": "native",
+      "scenario": "echo-payload",
+      "payloadType": "json",
+      "payloadSizeBytes": 0,
+      "iterations": 1200,
+      "iterationGroups": 1200,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 1817149.0215588484
+      },
+      "latencyMs": {
+        "p50": 0.0003750324249267578,
+        "p95": 0.00045800209045410156,
+        "p99": 0.001210157871246336,
+        "max": 0.04545783996582031
+      },
+      "cpu": {
+        "userMicrosPerOp": 1.0566666666666666,
+        "systemMicrosPerOp": 0.0775
+      },
+      "memory": {
+        "parentRssPeakMb": 88.4375,
+        "childRssMb": null
+      },
+      "bytesReturned": 40800
+    },
+    {
+      "mode": "native",
+      "scenario": "echo-payload",
+      "payloadType": "json",
+      "payloadSizeBytes": 256,
+      "iterations": 1200,
+      "iterationGroups": 1200,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 1844973.3545158028
+      },
+      "latencyMs": {
+        "p50": 0.00033402442932128906,
+        "p95": 0.0004999637603759766,
+        "p99": 0.0005831789970397949,
+        "max": 0.05620908737182617
+      },
+      "cpu": {
+        "userMicrosPerOp": 0.5258333333333334,
+        "systemMicrosPerOp": 0.024166666666666666
+      },
+      "memory": {
+        "parentRssPeakMb": 88.484375,
+        "childRssMb": null
+      },
+      "bytesReturned": 350400
+    },
+    {
+      "mode": "native",
+      "scenario": "echo-payload",
+      "payloadType": "json",
+      "payloadSizeBytes": 1024,
+      "iterations": 1200,
+      "iterationGroups": 1200,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 1153291.5048758367
+      },
+      "latencyMs": {
+        "p50": 0.0005002021789550781,
+        "p95": 0.0008749961853027344,
+        "p99": 0.0012924003601074215,
+        "max": 0.05195903778076172
+      },
+      "cpu": {
+        "userMicrosPerOp": 0.7808333333333334,
+        "systemMicrosPerOp": 0.04083333333333333
+      },
+      "memory": {
+        "parentRssPeakMb": 88.5,
+        "childRssMb": null
+      },
+      "bytesReturned": 1273200
+    },
+    {
+      "mode": "native",
+      "scenario": "echo-payload",
+      "payloadType": "json",
+      "payloadSizeBytes": 4096,
+      "iterations": 1200,
+      "iterationGroups": 1200,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 473582.95315267204
+      },
+      "latencyMs": {
+        "p50": 0.0016660690307617188,
+        "p95": 0.0022079944610595703,
+        "p99": 0.005336697101593014,
+        "max": 0.07866597175598145
+      },
+      "cpu": {
+        "userMicrosPerOp": 2.0275,
+        "systemMicrosPerOp": 0.235
+      },
+      "memory": {
+        "parentRssPeakMb": 88.53125,
+        "childRssMb": null
+      },
+      "bytesReturned": 4959600
+    },
+    {
+      "mode": "native",
+      "scenario": "echo-payload",
+      "payloadType": "json",
+      "payloadSizeBytes": 16384,
+      "iterations": 1200,
+      "iterationGroups": 1200,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 224912.17853536695
+      },
+      "latencyMs": {
+        "p50": 0.0031671524047851562,
+        "p95": 0.007333040237426758,
+        "p99": 0.03367351055145263,
+        "max": 0.09633278846740723
+      },
+      "cpu": {
+        "userMicrosPerOp": 3.9391666666666665,
+        "systemMicrosPerOp": 0.29833333333333334
+      },
+      "memory": {
+        "parentRssPeakMb": 88.59375,
+        "childRssMb": null
+      },
+      "bytesReturned": 19706400
+    },
+    {
+      "mode": "native",
+      "scenario": "echo-payload",
+      "payloadType": "json",
+      "payloadSizeBytes": 65536,
+      "iterations": 1200,
+      "iterationGroups": 1200,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 83075.40801514607
+      },
+      "latencyMs": {
+        "p50": 0.009665966033935547,
+        "p95": 0.03067951202392577,
+        "p99": 0.04960587739944456,
+        "max": 0.12241697311401367
+      },
+      "cpu": {
+        "userMicrosPerOp": 11.235833333333334,
+        "systemMicrosPerOp": 0.6225
+      },
+      "memory": {
+        "parentRssPeakMb": 90.390625,
+        "childRssMb": null
+      },
+      "bytesReturned": 78688800
+    },
+    {
+      "mode": "native",
+      "scenario": "echo-payload",
+      "payloadType": "json",
+      "payloadSizeBytes": 262144,
+      "iterations": 1200,
+      "iterationGroups": 1200,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 8882.542282278784
+      },
+      "latencyMs": {
+        "p50": 0.0606459379196167,
+        "p95": 0.18106433153152457,
+        "p99": 0.506437394618988,
+        "max": 24.503875017166138
+      },
+      "cpu": {
+        "userMicrosPerOp": 49.41833333333334,
+        "systemMicrosPerOp": 25.80666666666667
+      },
+      "memory": {
+        "parentRssPeakMb": 92.640625,
+        "childRssMb": null
+      },
+      "bytesReturned": 314619600
+    },
+    {
+      "mode": "native",
+      "scenario": "echo-payload",
+      "payloadType": "json",
+      "payloadSizeBytes": 1048576,
+      "iterations": 1200,
+      "iterationGroups": 1200,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 3342.616057952713
+      },
+      "latencyMs": {
+        "p50": 0.2509169578552246,
+        "p95": 0.3732937574386596,
+        "p99": 1.077717068195342,
+        "max": 12.134291887283325
+      },
+      "cpu": {
+        "userMicrosPerOp": 182.46916666666667,
+        "systemMicrosPerOp": 79.27166666666666
+      },
+      "memory": {
+        "parentRssPeakMb": 95.984375,
+        "childRssMb": null
+      },
+      "bytesReturned": 1258339200
+    },
+    {
+      "mode": "native",
+      "scenario": "echo-payload",
+      "payloadType": "json",
+      "payloadSizeBytes": 4194304,
+      "iterations": 1200,
+      "iterationGroups": 1200,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 878.1105965169229
+      },
+      "latencyMs": {
+        "p50": 1.0067501068115234,
+        "p95": 1.5380102396011353,
+        "p99": 4.171967513561247,
+        "max": 21.65945816040039
+      },
+      "cpu": {
+        "userMicrosPerOp": 683.4375,
+        "systemMicrosPerOp": 349.7425
+      },
+      "memory": {
+        "parentRssPeakMb": 105.0625,
+        "childRssMb": null
+      },
+      "bytesReturned": 5033212800
+    },
+    {
+      "mode": "native",
+      "scenario": "echo-payload",
+      "payloadType": "json",
+      "payloadSizeBytes": 10485760,
+      "iterations": 1200,
+      "iterationGroups": 1200,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 349.3428000221276
+      },
+      "latencyMs": {
+        "p50": 2.5361039638519287,
+        "p95": 4.565353846549986,
+        "p99": 8.74878612756729,
+        "max": 21.41962504386902
+      },
+      "cpu": {
+        "userMicrosPerOp": 1666.9508333333333,
+        "systemMicrosPerOp": 914.9658333333333
+      },
+      "memory": {
+        "parentRssPeakMb": 136.265625,
+        "childRssMb": null
+      },
+      "bytesReturned": 12582961200
+    },
+    {
+      "mode": "native",
+      "scenario": "echo-payload",
+      "payloadType": "json",
+      "payloadSizeBytes": 16777216,
+      "iterations": 1200,
+      "iterationGroups": 1200,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 209.26524180950386
+      },
+      "latencyMs": {
+        "p50": 4.228333473205566,
+        "p95": 7.569499719142913,
+        "p99": 14.407791383266447,
+        "max": 31.947582960128784
+      },
+      "cpu": {
+        "userMicrosPerOp": 2772.869166666667,
+        "systemMicrosPerOp": 1505.6566666666668
+      },
+      "memory": {
+        "parentRssPeakMb": 182.375,
+        "childRssMb": null
+      },
+      "bytesReturned": 20132708400
+    },
+    {
+      "mode": "bypass",
+      "scenario": "echo-payload",
+      "payloadType": "buffer",
+      "payloadSizeBytes": 0,
+      "iterations": 1200,
+      "iterationGroups": 1200,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 559071.25897992
+      },
+      "latencyMs": {
+        "p50": 0.00029206275939941406,
+        "p95": 0.0006670951843261719,
+        "p99": 0.004542295932769775,
+        "max": 1.3017079830169678
+      },
+      "cpu": {
+        "userMicrosPerOp": 1.5791666666666666,
+        "systemMicrosPerOp": 0.31416666666666665
+      },
+      "memory": {
+        "parentRssPeakMb": 54.453125,
+        "childRssMb": null
+      },
+      "bytesReturned": 0
+    },
+    {
+      "mode": "bypass",
+      "scenario": "echo-payload",
+      "payloadType": "buffer",
+      "payloadSizeBytes": 256,
+      "iterations": 1200,
+      "iterationGroups": 1200,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 1491532.1501630023
+      },
+      "latencyMs": {
+        "p50": 0.00025010108947753906,
+        "p95": 0.0003330707550048828,
+        "p99": 0.0025859475135803197,
+        "max": 0.15412497520446777
+      },
+      "cpu": {
+        "userMicrosPerOp": 0.7583333333333333,
+        "systemMicrosPerOp": 0.10083333333333333
+      },
+      "memory": {
+        "parentRssPeakMb": 54.59375,
+        "childRssMb": null
+      },
+      "bytesReturned": 307200
+    },
+    {
+      "mode": "bypass",
+      "scenario": "echo-payload",
+      "payloadType": "buffer",
+      "payloadSizeBytes": 1024,
+      "iterations": 1200,
+      "iterationGroups": 1200,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 2547094.0394991604
+      },
+      "latencyMs": {
+        "p50": 0.0002090930938720703,
+        "p95": 0.00025010108947753906,
+        "p99": 0.00033443212509155236,
+        "max": 0.05908393859863281
+      },
+      "cpu": {
+        "userMicrosPerOp": 0.38333333333333336,
+        "systemMicrosPerOp": 0.025
+      },
+      "memory": {
+        "parentRssPeakMb": 54.59375,
+        "childRssMb": null
+      },
+      "bytesReturned": 1228800
+    },
+    {
+      "mode": "bypass",
+      "scenario": "echo-payload",
+      "payloadType": "buffer",
+      "payloadSizeBytes": 4096,
+      "iterations": 1200,
+      "iterationGroups": 1200,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 2718776.4448124818
+      },
+      "latencyMs": {
+        "p50": 0.00020885467529296875,
+        "p95": 0.00025010108947753906,
+        "p99": 0.00029206275939941406,
+        "max": 0.04200005531311035
+      },
+      "cpu": {
+        "userMicrosPerOp": 0.37416666666666665,
+        "systemMicrosPerOp": 0.0225
+      },
+      "memory": {
+        "parentRssPeakMb": 54.59375,
+        "childRssMb": null
+      },
+      "bytesReturned": 4915200
+    },
+    {
+      "mode": "bypass",
+      "scenario": "echo-payload",
+      "payloadType": "buffer",
+      "payloadSizeBytes": 16384,
+      "iterations": 1200,
+      "iterationGroups": 1200,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 1803380.5560163686
+      },
+      "latencyMs": {
+        "p50": 0.00020885467529296875,
+        "p95": 0.00025010108947753906,
+        "p99": 0.0013756155967712398,
+        "max": 0.16562509536743164
+      },
+      "cpu": {
+        "userMicrosPerOp": 1.0966666666666667,
+        "systemMicrosPerOp": 0.2875
+      },
+      "memory": {
+        "parentRssPeakMb": 57.859375,
+        "childRssMb": null
+      },
+      "bytesReturned": 19660800
+    },
+    {
+      "mode": "bypass",
+      "scenario": "echo-payload",
+      "payloadType": "buffer",
+      "payloadSizeBytes": 65536,
+      "iterations": 1200,
+      "iterationGroups": 1200,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 3161704.487990879
+      },
+      "latencyMs": {
+        "p50": 0.0001671314239501953,
+        "p95": 0.0002090930938720703,
+        "p99": 0.00025010108947753906,
+        "max": 0.057083845138549805
+      },
+      "cpu": {
+        "userMicrosPerOp": 0.325,
+        "systemMicrosPerOp": 0.02666666666666667
+      },
+      "memory": {
+        "parentRssPeakMb": 58.625,
+        "childRssMb": null
+      },
+      "bytesReturned": 78643200
+    },
+    {
+      "mode": "bypass",
+      "scenario": "echo-payload",
+      "payloadType": "buffer",
+      "payloadSizeBytes": 262144,
+      "iterations": 1200,
+      "iterationGroups": 1200,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 3349614.8701259806
+      },
+      "latencyMs": {
+        "p50": 0.0002079010009765625,
+        "p95": 0.0002090930938720703,
+        "p99": 0.00029206275939941406,
+        "max": 0.0447080135345459
+      },
+      "cpu": {
+        "userMicrosPerOp": 0.29083333333333333,
+        "systemMicrosPerOp": 0.020833333333333332
+      },
+      "memory": {
+        "parentRssPeakMb": 58.8125,
+        "childRssMb": null
+      },
+      "bytesReturned": 314572800
+    },
+    {
+      "mode": "bypass",
+      "scenario": "echo-payload",
+      "payloadType": "buffer",
+      "payloadSizeBytes": 1048576,
+      "iterations": 1200,
+      "iterationGroups": 1200,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 3221114.1502949656
+      },
+      "latencyMs": {
+        "p50": 0.0002079010009765625,
+        "p95": 0.0002090930938720703,
+        "p99": 0.00029206275939941406,
+        "max": 0.006749868392944336
+      },
+      "cpu": {
+        "userMicrosPerOp": 0.29833333333333334,
+        "systemMicrosPerOp": 0.0175
+      },
+      "memory": {
+        "parentRssPeakMb": 59.8125,
+        "childRssMb": null
+      },
+      "bytesReturned": 1258291200
+    },
+    {
+      "mode": "bypass",
+      "scenario": "echo-payload",
+      "payloadType": "buffer",
+      "payloadSizeBytes": 4194304,
+      "iterations": 1200,
+      "iterationGroups": 1200,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 2210963.1717343344
+      },
+      "latencyMs": {
+        "p50": 0.00020885467529296875,
+        "p95": 0.00025010108947753906,
+        "p99": 0.0003750324249267578,
+        "max": 0.10770797729492188
+      },
+      "cpu": {
+        "userMicrosPerOp": 0.5966666666666667,
+        "systemMicrosPerOp": 0.06166666666666667
+      },
+      "memory": {
+        "parentRssPeakMb": 63.921875,
+        "childRssMb": null
+      },
+      "bytesReturned": 5033164800
+    },
+    {
+      "mode": "bypass",
+      "scenario": "echo-payload",
+      "payloadType": "buffer",
+      "payloadSizeBytes": 10485760,
+      "iterations": 1200,
+      "iterationGroups": 1200,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 2271475.4358783886
+      },
+      "latencyMs": {
+        "p50": 0.0002090930938720703,
+        "p95": 0.00029183626174926757,
+        "p99": 0.001042535305023193,
+        "max": 0.09883379936218262
+      },
+      "cpu": {
+        "userMicrosPerOp": 0.44916666666666666,
+        "systemMicrosPerOp": 0.0525
+      },
+      "memory": {
+        "parentRssPeakMb": 73.9375,
+        "childRssMb": null
+      },
+      "bytesReturned": 12582912000
+    },
+    {
+      "mode": "bypass",
+      "scenario": "echo-payload",
+      "payloadType": "buffer",
+      "payloadSizeBytes": 16777216,
+      "iterations": 1200,
+      "iterationGroups": 1200,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 2760472.9451795593
+      },
+      "latencyMs": {
+        "p50": 0.0002090930938720703,
+        "p95": 0.00025010108947753906,
+        "p99": 0.0003330707550048828,
+        "max": 0.014750003814697266
+      },
+      "cpu": {
+        "userMicrosPerOp": 0.3725,
+        "systemMicrosPerOp": 0.03833333333333333
+      },
+      "memory": {
+        "parentRssPeakMb": 90,
+        "childRssMb": null
+      },
+      "bytesReturned": 20132659200
+    },
+    {
+      "mode": "bypass",
+      "scenario": "echo-payload",
+      "payloadType": "uint8array",
+      "payloadSizeBytes": 0,
+      "iterations": 1200,
+      "iterationGroups": 1200,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 1900490.7961560972
+      },
+      "latencyMs": {
+        "p50": 0.00025010108947753906,
+        "p95": 0.00033379793167114257,
+        "p99": 0.0020441341400146465,
+        "max": 0.05425000190734863
+      },
+      "cpu": {
+        "userMicrosPerOp": 0.885,
+        "systemMicrosPerOp": 0.12333333333333334
+      },
+      "memory": {
+        "parentRssPeakMb": 91.296875,
+        "childRssMb": null
+      },
+      "bytesReturned": 0
+    },
+    {
+      "mode": "bypass",
+      "scenario": "echo-payload",
+      "payloadType": "uint8array",
+      "payloadSizeBytes": 256,
+      "iterations": 1200,
+      "iterationGroups": 1200,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 2998126.485462571
+      },
+      "latencyMs": {
+        "p50": 0.00020813941955566406,
+        "p95": 0.00025010108947753906,
+        "p99": 0.0003352737426757801,
+        "max": 0.008708000183105469
+      },
+      "cpu": {
+        "userMicrosPerOp": 0.5441666666666667,
+        "systemMicrosPerOp": 0.030833333333333334
+      },
+      "memory": {
+        "parentRssPeakMb": 91.5,
+        "childRssMb": null
+      },
+      "bytesReturned": 307200
+    },
+    {
+      "mode": "bypass",
+      "scenario": "echo-payload",
+      "payloadType": "uint8array",
+      "payloadSizeBytes": 1024,
+      "iterations": 1200,
+      "iterationGroups": 1200,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 2842478.211957332
+      },
+      "latencyMs": {
+        "p50": 0.0001671314239501953,
+        "p95": 0.0002498626708984375,
+        "p99": 0.00162506103515625,
+        "max": 0.05345892906188965
+      },
+      "cpu": {
+        "userMicrosPerOp": 0.31833333333333336,
+        "systemMicrosPerOp": 0.06666666666666667
+      },
+      "memory": {
+        "parentRssPeakMb": 92.40625,
+        "childRssMb": null
+      },
+      "bytesReturned": 1228800
+    },
+    {
+      "mode": "bypass",
+      "scenario": "echo-payload",
+      "payloadType": "uint8array",
+      "payloadSizeBytes": 4096,
+      "iterations": 1200,
+      "iterationGroups": 1200,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 3996668.7312401733
+      },
+      "latencyMs": {
+        "p50": 0.0001671314239501953,
+        "p95": 0.0002090930938720703,
+        "p99": 0.0002918243408203125,
+        "max": 0.0006251335144042969
+      },
+      "cpu": {
+        "userMicrosPerOp": 0.2425,
+        "systemMicrosPerOp": 0.008333333333333333
+      },
+      "memory": {
+        "parentRssPeakMb": 92.40625,
+        "childRssMb": null
+      },
+      "bytesReturned": 4915200
+    },
+    {
+      "mode": "bypass",
+      "scenario": "echo-payload",
+      "payloadType": "uint8array",
+      "payloadSizeBytes": 16384,
+      "iterations": 1200,
+      "iterationGroups": 1200,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 3357421.84060473
+      },
+      "latencyMs": {
+        "p50": 0.0001671314239501953,
+        "p95": 0.0002090930938720703,
+        "p99": 0.00029206275939941406,
+        "max": 0.05016589164733887
+      },
+      "cpu": {
+        "userMicrosPerOp": 0.28833333333333333,
+        "systemMicrosPerOp": 0.020833333333333332
+      },
+      "memory": {
+        "parentRssPeakMb": 92.421875,
+        "childRssMb": null
+      },
+      "bytesReturned": 19660800
+    },
+    {
+      "mode": "bypass",
+      "scenario": "echo-payload",
+      "payloadType": "uint8array",
+      "payloadSizeBytes": 65536,
+      "iterations": 1200,
+      "iterationGroups": 1200,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 3800473.5901029333
+      },
+      "latencyMs": {
+        "p50": 0.0001671314239501953,
+        "p95": 0.0002090930938720703,
+        "p99": 0.00029206275939941406,
+        "max": 0.00962519645690918
+      },
+      "cpu": {
+        "userMicrosPerOp": 0.3408333333333333,
+        "systemMicrosPerOp": 0.014166666666666666
+      },
+      "memory": {
+        "parentRssPeakMb": 92.421875,
+        "childRssMb": null
+      },
+      "bytesReturned": 78643200
+    },
+    {
+      "mode": "bypass",
+      "scenario": "echo-payload",
+      "payloadType": "uint8array",
+      "payloadSizeBytes": 262144,
+      "iterations": 1200,
+      "iterationGroups": 1200,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 3263086.962018341
+      },
+      "latencyMs": {
+        "p50": 0.0001671314239501953,
+        "p95": 0.0002090930938720703,
+        "p99": 0.00029206275939941406,
+        "max": 0.04404187202453613
+      },
+      "cpu": {
+        "userMicrosPerOp": 0.6783333333333333,
+        "systemMicrosPerOp": 0.03916666666666667
+      },
+      "memory": {
+        "parentRssPeakMb": 92.578125,
+        "childRssMb": null
+      },
+      "bytesReturned": 314572800
+    },
+    {
+      "mode": "bypass",
+      "scenario": "echo-payload",
+      "payloadType": "uint8array",
+      "payloadSizeBytes": 1048576,
+      "iterations": 1200,
+      "iterationGroups": 1200,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 3906138.404550312
+      },
+      "latencyMs": {
+        "p50": 0.0001671314239501953,
+        "p95": 0.0002090930938720703,
+        "p99": 0.0002918267250061035,
+        "max": 0.0014998912811279297
+      },
+      "cpu": {
+        "userMicrosPerOp": 0.5916666666666667,
+        "systemMicrosPerOp": 0.025
+      },
+      "memory": {
+        "parentRssPeakMb": 92.796875,
+        "childRssMb": null
+      },
+      "bytesReturned": 1258291200
+    },
+    {
+      "mode": "bypass",
+      "scenario": "echo-payload",
+      "payloadType": "uint8array",
+      "payloadSizeBytes": 4194304,
+      "iterations": 1200,
+      "iterationGroups": 1200,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 3405870.518902876
+      },
+      "latencyMs": {
+        "p50": 0.0001671314239501953,
+        "p95": 0.0002090930938720703,
+        "p99": 0.00029206275939941406,
+        "max": 0.04295802116394043
+      },
+      "cpu": {
+        "userMicrosPerOp": 0.2916666666666667,
+        "systemMicrosPerOp": 0.018333333333333333
+      },
+      "memory": {
+        "parentRssPeakMb": 92.796875,
+        "childRssMb": null
+      },
+      "bytesReturned": 5033164800
+    },
+    {
+      "mode": "bypass",
+      "scenario": "echo-payload",
+      "payloadType": "uint8array",
+      "payloadSizeBytes": 10485760,
+      "iterations": 1200,
+      "iterationGroups": 1200,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 4202551.507333142
+      },
+      "latencyMs": {
+        "p50": 0.00016689300537109375,
+        "p95": 0.00020885467529296875,
+        "p99": 0.00029087066650390625,
+        "max": 0.0012500286102294922
+      },
+      "cpu": {
+        "userMicrosPerOp": 0.23083333333333333,
+        "systemMicrosPerOp": 0.008333333333333333
+      },
+      "memory": {
+        "parentRssPeakMb": 92.796875,
+        "childRssMb": null
+      },
+      "bytesReturned": 12582912000
+    },
+    {
+      "mode": "bypass",
+      "scenario": "echo-payload",
+      "payloadType": "uint8array",
+      "payloadSizeBytes": 16777216,
+      "iterations": 1200,
+      "iterationGroups": 1200,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 3619911.5225641914
+      },
+      "latencyMs": {
+        "p50": 0.00016689300537109375,
+        "p95": 0.0001671314239501953,
+        "p99": 0.00025010108947753906,
+        "max": 0.049791812896728516
+      },
+      "cpu": {
+        "userMicrosPerOp": 0.27416666666666667,
+        "systemMicrosPerOp": 0.023333333333333334
+      },
+      "memory": {
+        "parentRssPeakMb": 108.8125,
+        "childRssMb": null
+      },
+      "bytesReturned": 20132659200
+    },
+    {
+      "mode": "bypass",
+      "scenario": "echo-payload",
+      "payloadType": "json",
+      "payloadSizeBytes": 0,
+      "iterations": 1200,
+      "iterationGroups": 1200,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 1769911.5741323568
+      },
+      "latencyMs": {
+        "p50": 0.00033402442932128906,
+        "p95": 0.00045800209045410156,
+        "p99": 0.004587464332580562,
+        "max": 0.03487515449523926
+      },
+      "cpu": {
+        "userMicrosPerOp": 1.0575,
+        "systemMicrosPerOp": 0.0725
+      },
+      "memory": {
+        "parentRssPeakMb": 108.953125,
+        "childRssMb": null
+      },
+      "bytesReturned": 40800
+    },
+    {
+      "mode": "bypass",
+      "scenario": "echo-payload",
+      "payloadType": "json",
+      "payloadSizeBytes": 256,
+      "iterations": 1200,
+      "iterationGroups": 1200,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 1837084.3837610416
+      },
+      "latencyMs": {
+        "p50": 0.0003750324249267578,
+        "p95": 0.0005002021789550781,
+        "p99": 0.0005831718444824219,
+        "max": 0.06487488746643066
+      },
+      "cpu": {
+        "userMicrosPerOp": 0.5216666666666666,
+        "systemMicrosPerOp": 0.043333333333333335
+      },
+      "memory": {
+        "parentRssPeakMb": 109,
+        "childRssMb": null
+      },
+      "bytesReturned": 350400
+    },
+    {
+      "mode": "bypass",
+      "scenario": "echo-payload",
+      "payloadType": "json",
+      "payloadSizeBytes": 1024,
+      "iterations": 1200,
+      "iterationGroups": 1200,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 1292638.2131203748
+      },
+      "latencyMs": {
+        "p50": 0.0007500648498535156,
+        "p95": 0.0008330345153808594,
+        "p99": 0.0009160041809082031,
+        "max": 0.058624982833862305
+      },
+      "cpu": {
+        "userMicrosPerOp": 0.7658333333333334,
+        "systemMicrosPerOp": 0.020833333333333332
+      },
+      "memory": {
+        "parentRssPeakMb": 109,
+        "childRssMb": null
+      },
+      "bytesReturned": 1273200
+    },
+    {
+      "mode": "bypass",
+      "scenario": "echo-payload",
+      "payloadType": "json",
+      "payloadSizeBytes": 4096,
+      "iterations": 1200,
+      "iterationGroups": 1200,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 589704.6769442746
+      },
+      "latencyMs": {
+        "p50": 0.001374959945678711,
+        "p95": 0.0021660327911376953,
+        "p99": 0.002333583831787109,
+        "max": 0.05083298683166504
+      },
+      "cpu": {
+        "userMicrosPerOp": 1.6733333333333333,
+        "systemMicrosPerOp": 0.15416666666666667
+      },
+      "memory": {
+        "parentRssPeakMb": 109.015625,
+        "childRssMb": null
+      },
+      "bytesReturned": 4959600
+    },
+    {
+      "mode": "bypass",
+      "scenario": "echo-payload",
+      "payloadType": "json",
+      "payloadSizeBytes": 16384,
+      "iterations": 1200,
+      "iterationGroups": 1200,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 267598.2659051735
+      },
+      "latencyMs": {
+        "p50": 0.0030841827392578125,
+        "p95": 0.007208824157714844,
+        "p99": 0.011189723014831522,
+        "max": 0.06675004959106445
+      },
+      "cpu": {
+        "userMicrosPerOp": 3.513333333333333,
+        "systemMicrosPerOp": 0.225
+      },
+      "memory": {
+        "parentRssPeakMb": 109.0625,
+        "childRssMb": null
+      },
+      "bytesReturned": 19706400
+    },
+    {
+      "mode": "bypass",
+      "scenario": "echo-payload",
+      "payloadType": "json",
+      "payloadSizeBytes": 65536,
+      "iterations": 1200,
+      "iterationGroups": 1200,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 89115.80381531695
+      },
+      "latencyMs": {
+        "p50": 0.00945901870727539,
+        "p95": 0.02823511362075803,
+        "p99": 0.03850714921951293,
+        "max": 0.07833290100097656
+      },
+      "cpu": {
+        "userMicrosPerOp": 10.874166666666667,
+        "systemMicrosPerOp": 0.2891666666666667
+      },
+      "memory": {
+        "parentRssPeakMb": 109.140625,
+        "childRssMb": null
+      },
+      "bytesReturned": 78688800
+    },
+    {
+      "mode": "bypass",
+      "scenario": "echo-payload",
+      "payloadType": "json",
+      "payloadSizeBytes": 262144,
+      "iterations": 1200,
+      "iterationGroups": 1200,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 14762.954761589974
+      },
+      "latencyMs": {
+        "p50": 0.05741715431213379,
+        "p95": 0.10504523515701293,
+        "p99": 0.1532243943214416,
+        "max": 0.8275411128997803
+      },
+      "cpu": {
+        "userMicrosPerOp": 45.200833333333335,
+        "systemMicrosPerOp": 21.475833333333334
+      },
+      "memory": {
+        "parentRssPeakMb": 111.3125,
+        "childRssMb": null
+      },
+      "bytesReturned": 314619600
+    },
+    {
+      "mode": "bypass",
+      "scenario": "echo-payload",
+      "payloadType": "json",
+      "payloadSizeBytes": 1048576,
+      "iterations": 1200,
+      "iterationGroups": 1200,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 3457.8636434588543
+      },
+      "latencyMs": {
+        "p50": 0.24447894096374512,
+        "p95": 0.4419664978981013,
+        "p99": 1.403193678855896,
+        "max": 3.741000175476074
+      },
+      "cpu": {
+        "userMicrosPerOp": 174.88833333333332,
+        "systemMicrosPerOp": 78.13916666666667
+      },
+      "memory": {
+        "parentRssPeakMb": 114.625,
+        "childRssMb": null
+      },
+      "bytesReturned": 1258339200
+    },
+    {
+      "mode": "bypass",
+      "scenario": "echo-payload",
+      "payloadType": "json",
+      "payloadSizeBytes": 4194304,
+      "iterations": 1200,
+      "iterationGroups": 1200,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 890.132189348071
+      },
+      "latencyMs": {
+        "p50": 1.0132083892822266,
+        "p95": 1.476218807697296,
+        "p99": 4.523615977764129,
+        "max": 8.08412504196167
+      },
+      "cpu": {
+        "userMicrosPerOp": 671.5233333333333,
+        "systemMicrosPerOp": 353.21666666666664
+      },
+      "memory": {
+        "parentRssPeakMb": 130.734375,
+        "childRssMb": null
+      },
+      "bytesReturned": 5033212800
+    },
+    {
+      "mode": "bypass",
+      "scenario": "echo-payload",
+      "payloadType": "json",
+      "payloadSizeBytes": 10485760,
+      "iterations": 1200,
+      "iterationGroups": 1200,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 334.4787721351355
+      },
+      "latencyMs": {
+        "p50": 2.6218334436416626,
+        "p95": 4.939906597137449,
+        "p99": 9.625817120075224,
+        "max": 24.203999996185303
+      },
+      "cpu": {
+        "userMicrosPerOp": 1714.1416666666667,
+        "systemMicrosPerOp": 941.2775
+      },
+      "memory": {
+        "parentRssPeakMb": 158.796875,
+        "childRssMb": null
+      },
+      "bytesReturned": 12582961200
+    },
+    {
+      "mode": "bypass",
+      "scenario": "echo-payload",
+      "payloadType": "json",
+      "payloadSizeBytes": 16777216,
+      "iterations": 1200,
+      "iterationGroups": 1200,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 202.62966162843253
+      },
+      "latencyMs": {
+        "p50": 4.278125047683716,
+        "p95": 8.831950104236595,
+        "p99": 16.284114179611205,
+        "max": 28.676458835601807
+      },
+      "cpu": {
+        "userMicrosPerOp": 2790.6658333333335,
+        "systemMicrosPerOp": 1543.0816666666667
+      },
+      "memory": {
+        "parentRssPeakMb": 204.859375,
+        "childRssMb": null
+      },
+      "bytesReturned": 20132708400
+    },
+    {
+      "mode": "sandbox",
+      "scenario": "echo-payload",
+      "payloadType": "buffer",
+      "payloadSizeBytes": 0,
+      "iterations": 1200,
+      "iterationGroups": 1200,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 15127.234207764235
+      },
+      "latencyMs": {
+        "p50": 0.057125091552734375,
+        "p95": 0.11029428243637085,
+        "p99": 0.20562268018722527,
+        "max": 0.6019577980041504
+      },
+      "cpu": {
+        "userMicrosPerOp": 32.9875,
+        "systemMicrosPerOp": 9.714166666666667
+      },
+      "memory": {
+        "parentRssPeakMb": 61.25,
+        "childRssMb": null
+      },
+      "bytesReturned": 0
+    },
+    {
+      "mode": "sandbox",
+      "scenario": "echo-payload",
+      "payloadType": "buffer",
+      "payloadSizeBytes": 256,
+      "iterations": 1200,
+      "iterationGroups": 1200,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 18227.21362813519
+      },
+      "latencyMs": {
+        "p50": 0.04654192924499512,
+        "p95": 0.08543993234634398,
+        "p99": 0.12584660530090327,
+        "max": 1.1674580574035645
+      },
+      "cpu": {
+        "userMicrosPerOp": 21.33416666666667,
+        "systemMicrosPerOp": 7.841666666666667
+      },
+      "memory": {
+        "parentRssPeakMb": 61.765625,
+        "childRssMb": null
+      },
+      "bytesReturned": 307200
+    },
+    {
+      "mode": "sandbox",
+      "scenario": "echo-payload",
+      "payloadType": "buffer",
+      "payloadSizeBytes": 1024,
+      "iterations": 1200,
+      "iterationGroups": 1200,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 11846.835223009582
+      },
+      "latencyMs": {
+        "p50": 0.048479437828063965,
+        "p95": 0.09901038408279418,
+        "p99": 0.5036531305313094,
+        "max": 15.186083793640137
+      },
+      "cpu": {
+        "userMicrosPerOp": 21.774166666666666,
+        "systemMicrosPerOp": 8.265833333333333
+      },
+      "memory": {
+        "parentRssPeakMb": 62.828125,
+        "childRssMb": null
+      },
+      "bytesReturned": 1228800
+    },
+    {
+      "mode": "sandbox",
+      "scenario": "echo-payload",
+      "payloadType": "buffer",
+      "payloadSizeBytes": 4096,
+      "iterations": 1200,
+      "iterationGroups": 1200,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 16394.90784386255
+      },
+      "latencyMs": {
+        "p50": 0.05408287048339844,
+        "p95": 0.09276672601699827,
+        "p99": 0.12693140745162956,
+        "max": 0.8670840263366699
+      },
+      "cpu": {
+        "userMicrosPerOp": 22.623333333333335,
+        "systemMicrosPerOp": 10.819166666666666
+      },
+      "memory": {
+        "parentRssPeakMb": 75.796875,
+        "childRssMb": null
+      },
+      "bytesReturned": 4915200
+    },
+    {
+      "mode": "sandbox",
+      "scenario": "echo-payload",
+      "payloadType": "buffer",
+      "payloadSizeBytes": 16384,
+      "iterations": 1200,
+      "iterationGroups": 1200,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 9958.643994071783
+      },
+      "latencyMs": {
+        "p50": 0.0646669864654541,
+        "p95": 0.12551726102828975,
+        "p99": 0.5167200040817257,
+        "max": 10.717083930969238
+      },
+      "cpu": {
+        "userMicrosPerOp": 27.41583333333333,
+        "systemMicrosPerOp": 15.7875
+      },
+      "memory": {
+        "parentRssPeakMb": 113.890625,
+        "childRssMb": null
+      },
+      "bytesReturned": 19660800
+    },
+    {
+      "mode": "sandbox",
+      "scenario": "echo-payload",
+      "payloadType": "buffer",
+      "payloadSizeBytes": 65536,
+      "iterations": 1200,
+      "iterationGroups": 1200,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 5865.358238092983
+      },
+      "latencyMs": {
+        "p50": 0.1335000991821289,
+        "p95": 0.24861453771591166,
+        "p99": 0.9474794363975519,
+        "max": 4.577125072479248
+      },
+      "cpu": {
+        "userMicrosPerOp": 59.79083333333333,
+        "systemMicrosPerOp": 39.415
+      },
+      "memory": {
+        "parentRssPeakMb": 221.625,
+        "childRssMb": null
+      },
+      "bytesReturned": 78643200
+    },
+    {
+      "mode": "sandbox",
+      "scenario": "echo-payload",
+      "payloadType": "buffer",
+      "payloadSizeBytes": 262144,
+      "iterations": 1200,
+      "iterationGroups": 1200,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 1030.3100031485963
+      },
+      "latencyMs": {
+        "p50": 0.7833755016326904,
+        "p95": 1.5869549274444548,
+        "p99": 5.980553996562957,
+        "max": 15.584832906723022
+      },
+      "cpu": {
+        "userMicrosPerOp": 148.19416666666666,
+        "systemMicrosPerOp": 298.2625
+      },
+      "memory": {
+        "parentRssPeakMb": 233,
+        "childRssMb": null
+      },
+      "bytesReturned": 314572800
+    },
+    {
+      "mode": "sandbox",
+      "scenario": "echo-payload",
+      "payloadType": "buffer",
+      "payloadSizeBytes": 1048576,
+      "iterations": 1200,
+      "iterationGroups": 1200,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 511.07254645386985
+      },
+      "latencyMs": {
+        "p50": 1.4508750438690186,
+        "p95": 4.091714823245999,
+        "p99": 7.657968590259549,
+        "max": 34.2352499961853
+      },
+      "cpu": {
+        "userMicrosPerOp": 232.52166666666668,
+        "systemMicrosPerOp": 575.38
+      },
+      "memory": {
+        "parentRssPeakMb": 236.125,
+        "childRssMb": null
+      },
+      "bytesReturned": 1258291200
+    },
+    {
+      "mode": "sandbox",
+      "scenario": "echo-payload",
+      "payloadType": "buffer",
+      "payloadSizeBytes": 4194304,
+      "iterations": 1200,
+      "iterationGroups": 1200,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 226.9819460689225
+      },
+      "latencyMs": {
+        "p50": 3.5590415000915527,
+        "p95": 8.06968569755554,
+        "p99": 21.268619627952567,
+        "max": 43.12258291244507
+      },
+      "cpu": {
+        "userMicrosPerOp": 563.245,
+        "systemMicrosPerOp": 1614.8525
+      },
+      "memory": {
+        "parentRssPeakMb": 312.515625,
+        "childRssMb": null
+      },
+      "bytesReturned": 5033164800
+    },
+    {
+      "mode": "sandbox",
+      "scenario": "echo-payload",
+      "payloadType": "buffer",
+      "payloadSizeBytes": 10485760,
+      "iterations": 1200,
+      "iterationGroups": 1200,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 106.62030815671628
+      },
+      "latencyMs": {
+        "p50": 8.100562572479248,
+        "p95": 15.784166705608367,
+        "p99": 32.92247278690337,
+        "max": 64.69224977493286
+      },
+      "cpu": {
+        "userMicrosPerOp": 1112.3325,
+        "systemMicrosPerOp": 3785.880833333333
+      },
+      "memory": {
+        "parentRssPeakMb": 402.671875,
+        "childRssMb": null
+      },
+      "bytesReturned": 12582912000
+    },
+    {
+      "mode": "sandbox",
+      "scenario": "echo-payload",
+      "payloadType": "buffer",
+      "payloadSizeBytes": 16777216,
+      "iterations": 1200,
+      "iterationGroups": 1200,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 67.52034435522866
+      },
+      "latencyMs": {
+        "p50": 12.231478929519653,
+        "p95": 23.921550679206838,
+        "p99": 66.24688742637633,
+        "max": 119.42175006866455
+      },
+      "cpu": {
+        "userMicrosPerOp": 1685.465,
+        "systemMicrosPerOp": 5698.485833333333
+      },
+      "memory": {
+        "parentRssPeakMb": 490.78125,
+        "childRssMb": null
+      },
+      "bytesReturned": 20132659200
+    },
+    {
+      "mode": "sandbox",
+      "scenario": "echo-payload",
+      "payloadType": "uint8array",
+      "payloadSizeBytes": 0,
+      "iterations": 1200,
+      "iterationGroups": 1200,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 18050.609418363314
+      },
+      "latencyMs": {
+        "p50": 0.04835402965545654,
+        "p95": 0.08304606676101685,
+        "p99": 0.13518780946731526,
+        "max": 1.1782500743865967
+      },
+      "cpu": {
+        "userMicrosPerOp": 24.020833333333332,
+        "systemMicrosPerOp": 7.869166666666667
+      },
+      "memory": {
+        "parentRssPeakMb": 450.828125,
+        "childRssMb": null
+      },
+      "bytesReturned": 0
+    },
+    {
+      "mode": "sandbox",
+      "scenario": "echo-payload",
+      "payloadType": "uint8array",
+      "payloadSizeBytes": 256,
+      "iterations": 1200,
+      "iterationGroups": 1200,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 17488.17568925122
+      },
+      "latencyMs": {
+        "p50": 0.045583486557006836,
+        "p95": 0.08271088600158691,
+        "p99": 0.3731303191184997,
+        "max": 2.5633339881896973
+      },
+      "cpu": {
+        "userMicrosPerOp": 21.128333333333334,
+        "systemMicrosPerOp": 7.665
+      },
+      "memory": {
+        "parentRssPeakMb": 450.859375,
+        "childRssMb": null
+      },
+      "bytesReturned": 307200
+    },
+    {
+      "mode": "sandbox",
+      "scenario": "echo-payload",
+      "payloadType": "uint8array",
+      "payloadSizeBytes": 1024,
+      "iterations": 1200,
+      "iterationGroups": 1200,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 17703.22751418761
+      },
+      "latencyMs": {
+        "p50": 0.04560399055480957,
+        "p95": 0.08952291011810301,
+        "p99": 0.28269620895385733,
+        "max": 1.659250020980835
+      },
+      "cpu": {
+        "userMicrosPerOp": 27.7025,
+        "systemMicrosPerOp": 8.37
+      },
+      "memory": {
+        "parentRssPeakMb": 451.65625,
+        "childRssMb": null
+      },
+      "bytesReturned": 1228800
+    },
+    {
+      "mode": "sandbox",
+      "scenario": "echo-payload",
+      "payloadType": "uint8array",
+      "payloadSizeBytes": 4096,
+      "iterations": 1200,
+      "iterationGroups": 1200,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 18629.201215075682
+      },
+      "latencyMs": {
+        "p50": 0.04789555072784424,
+        "p95": 0.08029108047485352,
+        "p99": 0.10500417947769165,
+        "max": 0.7573330402374268
+      },
+      "cpu": {
+        "userMicrosPerOp": 23.713333333333335,
+        "systemMicrosPerOp": 8.729166666666666
+      },
+      "memory": {
+        "parentRssPeakMb": 453.125,
+        "childRssMb": null
+      },
+      "bytesReturned": 4915200
+    },
+    {
+      "mode": "sandbox",
+      "scenario": "echo-payload",
+      "payloadType": "uint8array",
+      "payloadSizeBytes": 16384,
+      "iterations": 1200,
+      "iterationGroups": 1200,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 10445.133175777542
+      },
+      "latencyMs": {
+        "p50": 0.05854201316833496,
+        "p95": 0.10567126274108886,
+        "p99": 0.6453414225578303,
+        "max": 11.018625020980835
+      },
+      "cpu": {
+        "userMicrosPerOp": 28.631666666666668,
+        "systemMicrosPerOp": 13.410833333333333
+      },
+      "memory": {
+        "parentRssPeakMb": 458.046875,
+        "childRssMb": null
+      },
+      "bytesReturned": 19660800
+    },
+    {
+      "mode": "sandbox",
+      "scenario": "echo-payload",
+      "payloadType": "uint8array",
+      "payloadSizeBytes": 65536,
+      "iterations": 1200,
+      "iterationGroups": 1200,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 7395.7089415171085
+      },
+      "latencyMs": {
+        "p50": 0.11600005626678467,
+        "p95": 0.17392299175262446,
+        "p99": 0.5096503996849049,
+        "max": 6.473250150680542
+      },
+      "cpu": {
+        "userMicrosPerOp": 54.27916666666667,
+        "systemMicrosPerOp": 31.609166666666667
+      },
+      "memory": {
+        "parentRssPeakMb": 459.859375,
+        "childRssMb": null
+      },
+      "bytesReturned": 78643200
+    },
+    {
+      "mode": "sandbox",
+      "scenario": "echo-payload",
+      "payloadType": "uint8array",
+      "payloadSizeBytes": 262144,
+      "iterations": 1200,
+      "iterationGroups": 1200,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 940.9878117503116
+      },
+      "latencyMs": {
+        "p50": 0.7966665029525757,
+        "p95": 2.176218795776367,
+        "p99": 5.774657163619993,
+        "max": 20.015124797821045
+      },
+      "cpu": {
+        "userMicrosPerOp": 152.91416666666666,
+        "systemMicrosPerOp": 306.5875
+      },
+      "memory": {
+        "parentRssPeakMb": 481.8125,
+        "childRssMb": null
+      },
+      "bytesReturned": 314572800
+    },
+    {
+      "mode": "sandbox",
+      "scenario": "echo-payload",
+      "payloadType": "uint8array",
+      "payloadSizeBytes": 1048576,
+      "iterations": 1200,
+      "iterationGroups": 1200,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 549.7319913286784
+      },
+      "latencyMs": {
+        "p50": 1.4610419273376465,
+        "p95": 3.8232840538024884,
+        "p99": 8.824608795642847,
+        "max": 21.592000007629395
+      },
+      "cpu": {
+        "userMicrosPerOp": 334.1,
+        "systemMicrosPerOp": 556.8708333333333
+      },
+      "memory": {
+        "parentRssPeakMb": 379.96875,
+        "childRssMb": null
+      },
+      "bytesReturned": 1258291200
+    },
+    {
+      "mode": "sandbox",
+      "scenario": "echo-payload",
+      "payloadType": "uint8array",
+      "payloadSizeBytes": 4194304,
+      "iterations": 1200,
+      "iterationGroups": 1200,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 216.4427190009127
+      },
+      "latencyMs": {
+        "p50": 3.859708070755005,
+        "p95": 8.970372986793516,
+        "p99": 19.369847197532646,
+        "max": 36.5699999332428
+      },
+      "cpu": {
+        "userMicrosPerOp": 1009.2466666666667,
+        "systemMicrosPerOp": 1652.2275
+      },
+      "memory": {
+        "parentRssPeakMb": 443.96875,
+        "childRssMb": null
+      },
+      "bytesReturned": 5033164800
+    },
+    {
+      "mode": "sandbox",
+      "scenario": "echo-payload",
+      "payloadType": "uint8array",
+      "payloadSizeBytes": 10485760,
+      "iterations": 1200,
+      "iterationGroups": 1200,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 99.47413310447902
+      },
+      "latencyMs": {
+        "p50": 8.742812991142273,
+        "p95": 17.64387421607971,
+        "p99": 37.55829727888107,
+        "max": 55.28691577911377
+      },
+      "cpu": {
+        "userMicrosPerOp": 1978.0841666666668,
+        "systemMicrosPerOp": 3784.1675
+      },
+      "memory": {
+        "parentRssPeakMb": 473.96875,
+        "childRssMb": null
+      },
+      "bytesReturned": 12582912000
+    },
+    {
+      "mode": "sandbox",
+      "scenario": "echo-payload",
+      "payloadType": "uint8array",
+      "payloadSizeBytes": 16777216,
+      "iterations": 1200,
+      "iterationGroups": 1200,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 63.150944945197594
+      },
+      "latencyMs": {
+        "p50": 13.394166946411133,
+        "p95": 28.698010432720153,
+        "p99": 58.30177097082137,
+        "max": 86.45112490653992
+      },
+      "cpu": {
+        "userMicrosPerOp": 3626.5116666666668,
+        "systemMicrosPerOp": 5848.341666666666
+      },
+      "memory": {
+        "parentRssPeakMb": 486,
+        "childRssMb": null
+      },
+      "bytesReturned": 20132659200
+    },
+    {
+      "mode": "sandbox",
+      "scenario": "echo-payload",
+      "payloadType": "json",
+      "payloadSizeBytes": 0,
+      "iterations": 1200,
+      "iterationGroups": 1200,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 15949.078190576276
+      },
+      "latencyMs": {
+        "p50": 0.05427098274230957,
+        "p95": 0.10890837907791134,
+        "p99": 0.24038737535476673,
+        "max": 1.297083854675293
+      },
+      "cpu": {
+        "userMicrosPerOp": 23.9425,
+        "systemMicrosPerOp": 8.633333333333333
+      },
+      "memory": {
+        "parentRssPeakMb": 486.078125,
+        "childRssMb": null
+      },
+      "bytesReturned": 40800
+    },
+    {
+      "mode": "sandbox",
+      "scenario": "echo-payload",
+      "payloadType": "json",
+      "payloadSizeBytes": 256,
+      "iterations": 1200,
+      "iterationGroups": 1200,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 17080.66523418887
+      },
+      "latencyMs": {
+        "p50": 0.050687432289123535,
+        "p95": 0.10164371728897093,
+        "p99": 0.1649366998672485,
+        "max": 0.606665849685669
+      },
+      "cpu": {
+        "userMicrosPerOp": 20.894166666666667,
+        "systemMicrosPerOp": 8.129166666666666
+      },
+      "memory": {
+        "parentRssPeakMb": 486.609375,
+        "childRssMb": null
+      },
+      "bytesReturned": 350400
+    },
+    {
+      "mode": "sandbox",
+      "scenario": "echo-payload",
+      "payloadType": "json",
+      "payloadSizeBytes": 1024,
+      "iterations": 1200,
+      "iterationGroups": 1200,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 11096.859033381768
+      },
+      "latencyMs": {
+        "p50": 0.05410408973693848,
+        "p95": 0.1108350396156311,
+        "p99": 0.577930042743681,
+        "max": 10.641792058944702
+      },
+      "cpu": {
+        "userMicrosPerOp": 26.72,
+        "systemMicrosPerOp": 8.423333333333334
+      },
+      "memory": {
+        "parentRssPeakMb": 487.34375,
+        "childRssMb": null
+      },
+      "bytesReturned": 1273200
+    },
+    {
+      "mode": "sandbox",
+      "scenario": "echo-payload",
+      "payloadType": "json",
+      "payloadSizeBytes": 4096,
+      "iterations": 1200,
+      "iterationGroups": 1200,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 14610.626801318376
+      },
+      "latencyMs": {
+        "p50": 0.06264591217041016,
+        "p95": 0.11098940372467038,
+        "p99": 0.17372101068496698,
+        "max": 0.635667085647583
+      },
+      "cpu": {
+        "userMicrosPerOp": 24.2725,
+        "systemMicrosPerOp": 10.251666666666667
+      },
+      "memory": {
+        "parentRssPeakMb": 493.484375,
+        "childRssMb": null
+      },
+      "bytesReturned": 4959600
+    },
+    {
+      "mode": "sandbox",
+      "scenario": "echo-payload",
+      "payloadType": "json",
+      "payloadSizeBytes": 16384,
+      "iterations": 1200,
+      "iterationGroups": 1200,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 11581.73992882123
+      },
+      "latencyMs": {
+        "p50": 0.07581198215484619,
+        "p95": 0.13822132349014282,
+        "p99": 0.29979742765426604,
+        "max": 1.740541934967041
+      },
+      "cpu": {
+        "userMicrosPerOp": 30.683333333333334,
+        "systemMicrosPerOp": 14.651666666666667
+      },
+      "memory": {
+        "parentRssPeakMb": 507.109375,
+        "childRssMb": null
+      },
+      "bytesReturned": 19706400
+    },
+    {
+      "mode": "sandbox",
+      "scenario": "echo-payload",
+      "payloadType": "json",
+      "payloadSizeBytes": 65536,
+      "iterations": 1200,
+      "iterationGroups": 1200,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 4561.123336086139
+      },
+      "latencyMs": {
+        "p50": 0.1630418300628662,
+        "p95": 0.292488157749176,
+        "p99": 1.3268402957916257,
+        "max": 22.131333112716675
+      },
+      "cpu": {
+        "userMicrosPerOp": 82.935,
+        "systemMicrosPerOp": 59.0525
+      },
+      "memory": {
+        "parentRssPeakMb": 601.125,
+        "childRssMb": null
+      },
+      "bytesReturned": 78688800
+    },
+    {
+      "mode": "sandbox",
+      "scenario": "echo-payload",
+      "payloadType": "json",
+      "payloadSizeBytes": 262144,
+      "iterations": 1200,
+      "iterationGroups": 1200,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 1599.2321024222558
+      },
+      "latencyMs": {
+        "p50": 0.4750000238418579,
+        "p95": 0.8641729235649093,
+        "p99": 3.850263671874998,
+        "max": 24.493374824523926
+      },
+      "cpu": {
+        "userMicrosPerOp": 203.91833333333332,
+        "systemMicrosPerOp": 206.20083333333332
+      },
+      "memory": {
+        "parentRssPeakMb": 637.859375,
+        "childRssMb": null
+      },
+      "bytesReturned": 314619600
+    },
+    {
+      "mode": "sandbox",
+      "scenario": "echo-payload",
+      "payloadType": "json",
+      "payloadSizeBytes": 1048576,
+      "iterations": 1200,
+      "iterationGroups": 1200,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 498.08271878686577
+      },
+      "latencyMs": {
+        "p50": 1.5328329801559448,
+        "p95": 3.960973167419433,
+        "p99": 12.013231863975518,
+        "max": 29.081959009170532
+      },
+      "cpu": {
+        "userMicrosPerOp": 661.8633333333333,
+        "systemMicrosPerOp": 672.63
+      },
+      "memory": {
+        "parentRssPeakMb": 567.171875,
+        "childRssMb": null
+      },
+      "bytesReturned": 1258339200
+    },
+    {
+      "mode": "sandbox",
+      "scenario": "echo-payload",
+      "payloadType": "json",
+      "payloadSizeBytes": 4194304,
+      "iterations": 1200,
+      "iterationGroups": 1200,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 144.7650150707134
+      },
+      "latencyMs": {
+        "p50": 5.7045204639434814,
+        "p95": 11.829818618297576,
+        "p99": 33.045012443065644,
+        "max": 50.97583317756653
+      },
+      "cpu": {
+        "userMicrosPerOp": 2358.034166666667,
+        "systemMicrosPerOp": 2417.24
+      },
+      "memory": {
+        "parentRssPeakMb": 629.65625,
+        "childRssMb": null
+      },
+      "bytesReturned": 5033212800
+    },
+    {
+      "mode": "sandbox",
+      "scenario": "echo-payload",
+      "payloadType": "json",
+      "payloadSizeBytes": 10485760,
+      "iterations": 1200,
+      "iterationGroups": 1200,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 58.5049872016722
+      },
+      "latencyMs": {
+        "p50": 15.10535454750061,
+        "p95": 37.70226455926894,
+        "p99": 47.80564664840698,
+        "max": 73.03779101371765
+      },
+      "cpu": {
+        "userMicrosPerOp": 5915.364166666666,
+        "systemMicrosPerOp": 5982.065833333333
+      },
+      "memory": {
+        "parentRssPeakMb": 621.640625,
+        "childRssMb": null
+      },
+      "bytesReturned": 12582961200
+    },
+    {
+      "mode": "sandbox",
+      "scenario": "echo-payload",
+      "payloadType": "json",
+      "payloadSizeBytes": 16777216,
+      "iterations": 1200,
+      "iterationGroups": 1200,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 37.20807811307926
+      },
+      "latencyMs": {
+        "p50": 23.475208044052124,
+        "p95": 52.585218811035155,
+        "p99": 60.532339406013485,
+        "max": 153.84412503242493
+      },
+      "cpu": {
+        "userMicrosPerOp": 8433.890833333333,
+        "systemMicrosPerOp": 9828.110833333334
+      },
+      "memory": {
+        "parentRssPeakMb": 683.3125,
+        "childRssMb": null
+      },
+      "bytesReturned": 20132708400
+    },
+    {
+      "mode": "native",
+      "scenario": "mixed-workload",
+      "payloadType": null,
+      "payloadSizeBytes": null,
+      "iterations": 12000,
+      "iterationGroups": 12000,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 659019.2904198597
+      },
+      "latencyMs": {
+        "p50": 0.0004169940948486328,
+        "p95": 0.0007088184356689453,
+        "p99": 0.0028328919410705567,
+        "max": 1.4952919483184814
+      },
+      "cpu": {
+        "userMicrosPerOp": 0.8695,
+        "systemMicrosPerOp": 0.15975
+      },
+      "memory": {
+        "parentRssPeakMb": 56.796875,
+        "childRssMb": null
+      },
+      "bytesReturned": 830356800
+    },
+    {
+      "mode": "bypass",
+      "scenario": "mixed-workload",
+      "payloadType": null,
+      "payloadSizeBytes": null,
+      "iterations": 12000,
+      "iterationGroups": 12000,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 1474586.4100730086
+      },
+      "latencyMs": {
+        "p50": 0.00045800209045410156,
+        "p95": 0.0007078647613525391,
+        "p99": 0.0017923641204834074,
+        "max": 0.3162081241607666
+      },
+      "cpu": {
+        "userMicrosPerOp": 0.76575,
+        "systemMicrosPerOp": 0.09808333333333333
+      },
+      "memory": {
+        "parentRssPeakMb": 60.796875,
+        "childRssMb": null
+      },
+      "bytesReturned": 830356800
+    },
+    {
+      "mode": "sandbox",
+      "scenario": "mixed-workload",
+      "payloadType": null,
+      "payloadSizeBytes": null,
+      "iterations": 12000,
+      "iterationGroups": 12000,
+      "batchSize": 1,
+      "throughput": {
+        "opsPerSec": 5946.918303478358
+      },
+      "latencyMs": {
+        "p50": 0.048542022705078125,
+        "p95": 1.433441984653469,
+        "p99": 1.9052662134170546,
+        "max": 17.777250051498413
+      },
+      "cpu": {
+        "userMicrosPerOp": 45.06008333333333,
+        "systemMicrosPerOp": 44.7365
+      },
+      "memory": {
+        "parentRssPeakMb": 187.625,
+        "childRssMb": null
+      },
+      "bytesReturned": 830356800
+    }
+  ]
+}

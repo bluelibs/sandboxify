@@ -1,12 +1,12 @@
-import fs from 'node:fs';
-import path from 'node:path';
-import { createRequire } from 'node:module';
-import { pathToFileURL } from 'node:url';
-import { loadPolicySync } from '../policy/index.js';
+import fs from "node:fs";
+import path from "node:path";
+import { createRequire } from "node:module";
+import { pathToFileURL } from "node:url";
+import { loadPolicySync } from "../policy/index.js";
 
 export async function buildManifest({
-  policyPath = './sandboxify.policy.jsonc',
-  manifestPath = './.sandboxify/exports.manifest.json',
+  policyPath = "./sandboxify.policy.jsonc",
+  manifestPath = "./.sandboxify/exports.manifest.json",
 } = {}) {
   const policy = loadPolicySync(policyPath);
   const specifiers = expandPolicySpecifiers(policy);
@@ -29,8 +29,8 @@ export async function buildManifest({
     }
 
     const exportNames = Object.keys(namespace);
-    if ('default' in namespace && !exportNames.includes('default')) {
-      exportNames.unshift('default');
+    if ("default" in namespace && !exportNames.includes("default")) {
+      exportNames.unshift("default");
     }
 
     const entry = {
@@ -64,14 +64,20 @@ export async function buildManifest({
   return manifest;
 }
 
-export function readManifestSync(manifestPath = './.sandboxify/exports.manifest.json') {
+export function readManifestSync(
+  manifestPath = "./.sandboxify/exports.manifest.json",
+) {
   const absoluteManifestPath = path.resolve(process.cwd(), manifestPath);
-  const raw = fs.readFileSync(absoluteManifestPath, 'utf8');
+  const raw = fs.readFileSync(absoluteManifestPath, "utf8");
   return JSON.parse(raw);
 }
 
 export function getManifestEntry(manifest, realUrl, specifier) {
-  return manifest?.entriesByUrl?.[realUrl] ?? manifest?.entriesBySpecifier?.[specifier] ?? null;
+  return (
+    manifest?.entriesByUrl?.[realUrl] ??
+    manifest?.entriesBySpecifier?.[specifier] ??
+    null
+  );
 }
 
 function expandPolicySpecifiers(policy) {
@@ -79,7 +85,7 @@ function expandPolicySpecifiers(policy) {
   const output = new Set();
 
   for (const mapping of policy.packageMappings ?? []) {
-    if (mapping.type === 'exact') {
+    if (mapping.type === "exact") {
       output.add(mapping.pattern);
       continue;
     }
@@ -95,12 +101,14 @@ function expandPolicySpecifiers(policy) {
 }
 
 function listInstalledPackages(cwd) {
-  const nodeModulesPath = path.join(cwd, 'node_modules');
+  const nodeModulesPath = path.join(cwd, "node_modules");
   if (!fs.existsSync(nodeModulesPath)) {
     return [];
   }
 
-  const directEntries = fs.readdirSync(nodeModulesPath, { withFileTypes: true });
+  const directEntries = fs.readdirSync(nodeModulesPath, {
+    withFileTypes: true,
+  });
   const results = [];
 
   for (const entry of directEntries) {
@@ -108,7 +116,7 @@ function listInstalledPackages(cwd) {
       continue;
     }
 
-    if (entry.name.startsWith('@')) {
+    if (entry.name.startsWith("@")) {
       const scopePath = path.join(nodeModulesPath, entry.name);
       const scopedEntries = fs.readdirSync(scopePath, { withFileTypes: true });
       for (const scopedEntry of scopedEntries) {
@@ -127,8 +135,12 @@ function listInstalledPackages(cwd) {
 
 function resolveSpecifierFromCwd(specifier) {
   const cwd = process.cwd();
-  const packageJsonPath = path.join(cwd, 'package.json');
-  const require = createRequire(fs.existsSync(packageJsonPath) ? packageJsonPath : path.join(cwd, 'index.js'));
+  const packageJsonPath = path.join(cwd, "package.json");
+  const require = createRequire(
+    fs.existsSync(packageJsonPath)
+      ? packageJsonPath
+      : path.join(cwd, "index.js"),
+  );
 
   try {
     return require.resolve(specifier);
@@ -138,10 +150,10 @@ function resolveSpecifierFromCwd(specifier) {
 }
 
 function packageNameFromSpecifier(specifier) {
-  if (specifier.startsWith('@')) {
-    const [scope, name] = specifier.split('/');
+  if (specifier.startsWith("@")) {
+    const [scope, name] = specifier.split("/");
     return `${scope}/${name}`;
   }
 
-  return specifier.split('/')[0];
+  return specifier.split("/")[0];
 }

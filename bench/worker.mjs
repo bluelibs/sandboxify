@@ -1,6 +1,6 @@
-import { execFileSync } from 'node:child_process';
-import { makePayload, estimatePayloadBytes } from './lib/payloads.mjs';
-import { nowMs, summarizeLatencies } from './lib/stats.mjs';
+import { execFileSync } from "node:child_process";
+import { makePayload, estimatePayloadBytes } from "./lib/payloads.mjs";
+import { nowMs, summarizeLatencies } from "./lib/stats.mjs";
 
 const args = parseArgs(process.argv.slice(2));
 const scenario = args.scenario;
@@ -8,31 +8,45 @@ const mode = args.mode;
 const profile = args.profile;
 
 if (!scenario || !mode || !profile) {
-  console.error('Usage: node bench/worker.mjs --scenario <name> --mode <native|bypass|sandbox> --profile <smoke|full>');
+  console.error(
+    "Usage: node bench/worker.mjs --scenario <name> --mode <native|bypass|sandbox> --profile <smoke|full>",
+  );
   process.exit(1);
 }
 
-const target = await import('#sandboxify-bench-target');
+const target = await import("#sandboxify-bench-target");
 
-if (scenario === 'rpc-noop') {
-  const iterations = profile === 'full' ? 30000 : 6000;
+if (scenario === "rpc-noop") {
+  const iterations = profile === "full" ? 30000 : 6000;
   emit(await runRpcNoop({ target, mode, scenario, iterations }));
   process.exit(0);
 }
 
-if (scenario === 'rpc-batch-noop') {
-  const batchSize = profile === 'full' ? 32 : 16;
-  const groups = profile === 'full' ? 3000 : 800;
-  emit(await runRpcBatchNoop({ target, mode, scenario: `rpc-batch-noop-${batchSize}`, groups, batchSize }));
+if (scenario === "rpc-batch-noop") {
+  const batchSize = profile === "full" ? 32 : 16;
+  const groups = profile === "full" ? 3000 : 800;
+  emit(
+    await runRpcBatchNoop({
+      target,
+      mode,
+      scenario: `rpc-batch-noop-${batchSize}`,
+      groups,
+      batchSize,
+    }),
+  );
   process.exit(0);
 }
 
-if (scenario === 'echo-payload') {
-  const sizes = profile === 'full'
-    ? [0, 256, 1024, 4096, 16384, 65536, 262144, 1048576, 4194304, 10485760, 16777216]
-    : [0, 1024, 65536, 1048576];
-  const payloadTypes = ['buffer', 'uint8array', 'json'];
-  const iterationsPerCase = profile === 'full' ? 1200 : 300;
+if (scenario === "echo-payload") {
+  const sizes =
+    profile === "full"
+      ? [
+          0, 256, 1024, 4096, 16384, 65536, 262144, 1048576, 4194304, 10485760,
+          16777216,
+        ]
+      : [0, 1024, 65536, 1048576];
+  const payloadTypes = ["buffer", "uint8array", "json"];
+  const iterationsPerCase = profile === "full" ? 1200 : 300;
   const results = [];
 
   for (const payloadType of payloadTypes) {
@@ -54,9 +68,15 @@ if (scenario === 'echo-payload') {
   process.exit(0);
 }
 
-if (scenario === 'mixed-workload') {
-  const iterations = profile === 'full' ? 12000 : 2500;
+if (scenario === "mixed-workload") {
+  const iterations = profile === "full" ? 12000 : 2500;
   emit(await runMixedWorkload({ target, mode, scenario, iterations }));
+  process.exit(0);
+}
+
+if (scenario === "remote-work-200ms") {
+  const iterations = profile === "full" ? 15 : 6;
+  emit(await runRemoteWork200ms({ target, mode, scenario, iterations }));
   process.exit(0);
 }
 
@@ -83,7 +103,7 @@ async function runRpcBatchNoop({ target, mode, scenario, groups, batchSize }) {
     iterations: groups,
     operationsPerIteration: batchSize,
     execute: async () => {
-      if (typeof target.rpcNoop?.batch === 'function') {
+      if (typeof target.rpcNoop?.batch === "function") {
         await target.rpcNoop.batch(batchArgs);
         return 0;
       }
@@ -97,7 +117,14 @@ async function runRpcBatchNoop({ target, mode, scenario, groups, batchSize }) {
   });
 }
 
-async function runEchoPayload({ target, mode, scenario, payloadType, payloadSizeBytes, iterations }) {
+async function runEchoPayload({
+  target,
+  mode,
+  scenario,
+  payloadType,
+  payloadSizeBytes,
+  iterations,
+}) {
   const payload = makePayload(payloadType, payloadSizeBytes);
   return benchmarkCommon({
     mode,
@@ -114,9 +141,9 @@ async function runEchoPayload({ target, mode, scenario, payloadType, payloadSize
 
 async function runMixedWorkload({ target, mode, scenario, iterations }) {
   const picks = [
-    { weight: 70, payloadType: 'json', payloadSizeBytes: 512 },
-    { weight: 25, payloadType: 'buffer', payloadSizeBytes: 65536 },
-    { weight: 5, payloadType: 'uint8array', payloadSizeBytes: 1048576 },
+    { weight: 70, payloadType: "json", payloadSizeBytes: 512 },
+    { weight: 25, payloadType: "buffer", payloadSizeBytes: 65536 },
+    { weight: 5, payloadType: "uint8array", payloadSizeBytes: 1048576 },
   ];
 
   const weighted = [];
@@ -146,7 +173,27 @@ async function runMixedWorkload({ target, mode, scenario, iterations }) {
   });
 }
 
-async function benchmarkCommon({ mode, scenario, payloadType = null, payloadSizeBytes = null, iterations, operationsPerIteration = 1, execute }) {
+async function runRemoteWork200ms({ target, mode, scenario, iterations }) {
+  return benchmarkCommon({
+    mode,
+    scenario,
+    iterations,
+    execute: async () => {
+      await target.remoteWork200ms();
+      return 0;
+    },
+  });
+}
+
+async function benchmarkCommon({
+  mode,
+  scenario,
+  payloadType = null,
+  payloadSizeBytes = null,
+  iterations,
+  operationsPerIteration = 1,
+  execute,
+}) {
   const latenciesMs = [];
   let bytesReturned = 0;
   let parentRssPeakBytes = process.memoryUsage().rss;
@@ -177,9 +224,12 @@ async function benchmarkCommon({ mode, scenario, payloadType = null, payloadSize
   const latencyMs = summarizeLatencies(latenciesMs);
 
   const userMicros = Math.max(endCpu.userCPUTime - startCpu.userCPUTime, 0);
-  const systemMicros = Math.max(endCpu.systemCPUTime - startCpu.systemCPUTime, 0);
+  const systemMicros = Math.max(
+    endCpu.systemCPUTime - startCpu.systemCPUTime,
+    0,
+  );
 
-  const childPid = mode === 'sandbox' ? await detectSandboxChildPid() : null;
+  const childPid = mode === "sandbox" ? await detectSandboxChildPid() : null;
   const childRssMb = childPid ? readChildRssMb(childPid) : null;
 
   return {
@@ -208,7 +258,7 @@ async function benchmarkCommon({ mode, scenario, payloadType = null, payloadSize
 
 async function detectSandboxChildPid() {
   try {
-    const { getRuntimePool } = await import('../src/runtime/index.js');
+    const { getRuntimePool } = await import("../src/runtime/index.js");
     const pool = getRuntimePool();
     for (const client of pool.clients.values()) {
       if (client?.proc?.pid) {
@@ -224,7 +274,9 @@ async function detectSandboxChildPid() {
 
 function readChildRssMb(pid) {
   try {
-    const raw = execFileSync('ps', ['-o', 'rss=', '-p', String(pid)], { encoding: 'utf8' }).trim();
+    const raw = execFileSync("ps", ["-o", "rss=", "-p", String(pid)], {
+      encoding: "utf8",
+    }).trim();
     const kb = Number.parseInt(raw, 10);
     if (!Number.isFinite(kb)) return null;
     return kb / 1024;
@@ -236,8 +288,8 @@ function readChildRssMb(pid) {
 function parseArgs(argv) {
   const out = {};
   for (let i = 0; i < argv.length; i += 1) {
-    if (argv[i].startsWith('--')) {
-      out[argv[i].slice(2)] = argv[i + 1] ?? '';
+    if (argv[i].startsWith("--")) {
+      out[argv[i].slice(2)] = argv[i + 1] ?? "";
       i += 1;
     }
   }

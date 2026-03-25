@@ -8,7 +8,7 @@
       "allowWorker": false,
       "allowAddons": false,
       "allowWasi": false,
-      "allowInspector": false
+      "allowInspector": false,
     },
     "restricted_net": {
       "allowNet": false,
@@ -18,7 +18,7 @@
       "allowWorker": false,
       "allowAddons": false,
       "allowWasi": false,
-      "allowInspector": false
+      "allowInspector": false,
     },
     "open_net": {
       "allowNet": true,
@@ -28,23 +28,23 @@
       "allowWorker": false,
       "allowAddons": false,
       "allowWasi": false,
-      "allowInspector": false
-    }
+      "allowInspector": false,
+    },
   },
   "packages": {
     "sandboxed-lib": "cpu_only",
-    "sideeffect-lib": "cpu_only"
+    "sideeffect-lib": "cpu_only",
   },
   "importerRules": [
     {
       "importer": "__PROJECT_DIR_URL__/restricted*",
       "specifier": "sandboxed-lib",
-      "bucket": "restricted_net"
+      "bucket": "restricted_net",
     },
     {
       "importer": "__PROJECT_DIR_URL__/open*",
       "specifier": "sandboxed-lib",
-      "bucket": "open_net"
-    }
-  ]
+      "bucket": "open_net",
+    },
+  ],
 }

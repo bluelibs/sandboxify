@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-03-02T15:25:03.766Z",
+  "generatedAt": "2026-03-25T16:49:53.569Z",
   "nodeVersion": "v25.7.0",
   "entriesByUrl": {
     "file:///Users/theodordiaconu/Projects/node-sec/bench/fixtures/bench-target/index.mjs": {
@@ -9,9 +9,10 @@
       "realUrl": "file:///Users/theodordiaconu/Projects/node-sec/bench/fixtures/bench-target/index.mjs",
       "exportNames": [
         "echoPayload",
+        "remoteWork200ms",
         "rpcNoop"
       ],
-      "generatedAt": "2026-03-02T15:25:03.765Z"
+      "generatedAt": "2026-03-25T16:49:53.568Z"
     }
   },
   "entriesBySpecifier": {
@@ -20,6 +21,7 @@
       "realUrl": "file:///Users/theodordiaconu/Projects/node-sec/bench/fixtures/bench-target/index.mjs",
       "exportNames": [
         "echoPayload",
+        "remoteWork200ms",
         "rpcNoop"
       ]
     }

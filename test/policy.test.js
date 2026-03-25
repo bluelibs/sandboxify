@@ -1,8 +1,8 @@
-import test from 'node:test';
-import assert from 'node:assert/strict';
-import { createPolicyMatcher, normalizePolicy } from '../src/policy/index.js';
+import test from "node:test";
+import assert from "node:assert/strict";
+import { createPolicyMatcher, normalizePolicy } from "../src/policy/index.js";
 
-test('policy matcher prefers exact over wildcard and longest wildcard prefix', () => {
+test("policy matcher prefers exact over wildcard and longest wildcard prefix", () => {
   const policy = normalizePolicy({
     buckets: {
       exactBucket: {},
@@ -10,21 +10,21 @@ test('policy matcher prefers exact over wildcard and longest wildcard prefix', (
       longWildcardBucket: {},
     },
     packages: {
-      'pkg': 'exactBucket',
-      'pkg/*': 'wildcardBucket',
-      'pkg/sub/*': 'longWildcardBucket',
+      pkg: "exactBucket",
+      "pkg/*": "wildcardBucket",
+      "pkg/sub/*": "longWildcardBucket",
     },
   });
 
   const matcher = createPolicyMatcher(policy);
 
-  assert.equal(matcher.match('pkg'), 'exactBucket');
-  assert.equal(matcher.match('pkg/any'), 'wildcardBucket');
-  assert.equal(matcher.match('pkg/sub/path'), 'longWildcardBucket');
-  assert.equal(matcher.match('other'), null);
+  assert.equal(matcher.match("pkg"), "exactBucket");
+  assert.equal(matcher.match("pkg/any"), "wildcardBucket");
+  assert.equal(matcher.match("pkg/sub/path"), "longWildcardBucket");
+  assert.equal(matcher.match("other"), null);
 });
 
-test('policy matcher supports importerRules with deterministic precedence', () => {
+test("policy matcher supports importerRules with deterministic precedence", () => {
   const policy = normalizePolicy({
     buckets: {
       defaultBucket: {},
@@ -32,18 +32,18 @@ test('policy matcher supports importerRules with deterministic precedence', () =
       narrowBucket: {},
     },
     packages: {
-      'sandboxed-lib': 'defaultBucket',
+      "sandboxed-lib": "defaultBucket",
     },
     importerRules: [
       {
-        importer: 'file:///app/src/restricted/*',
-        specifier: 'sandboxed-lib',
-        bucket: 'restrictedBucket',
+        importer: "file:///app/src/restricted/*",
+        specifier: "sandboxed-lib",
+        bucket: "restrictedBucket",
       },
       {
-        importer: 'file:///app/src/restricted/narrow/*',
-        specifier: 'sandboxed-lib',
-        bucket: 'narrowBucket',
+        importer: "file:///app/src/restricted/narrow/*",
+        specifier: "sandboxed-lib",
+        bucket: "narrowBucket",
       },
     ],
   });
@@ -51,15 +51,18 @@ test('policy matcher supports importerRules with deterministic precedence', () =
   const matcher = createPolicyMatcher(policy);
 
   assert.equal(
-    matcher.match('sandboxed-lib', 'file:///app/src/restricted/module.mjs'),
-    'restrictedBucket',
+    matcher.match("sandboxed-lib", "file:///app/src/restricted/module.mjs"),
+    "restrictedBucket",
   );
   assert.equal(
-    matcher.match('sandboxed-lib', 'file:///app/src/restricted/narrow/module.mjs'),
-    'narrowBucket',
+    matcher.match(
+      "sandboxed-lib",
+      "file:///app/src/restricted/narrow/module.mjs",
+    ),
+    "narrowBucket",
   );
   assert.equal(
-    matcher.match('sandboxed-lib', 'file:///app/src/open/module.mjs'),
-    'defaultBucket',
+    matcher.match("sandboxed-lib", "file:///app/src/open/module.mjs"),
+    "defaultBucket",
   );
 });

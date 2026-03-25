@@ -1,9 +1,9 @@
-import fs from 'node:fs';
+import fs from "node:fs";
 
 async function main() {
   try {
-    const raw = fs.readFileSync(0, 'utf8');
-    const payload = decodeWireValue(JSON.parse(raw || '{}'));
+    const raw = fs.readFileSync(0, "utf8");
+    const payload = decodeWireValue(JSON.parse(raw || "{}"));
     const value = await dispatch(payload);
 
     process.stdout.write(
@@ -27,18 +27,18 @@ async function dispatch(payload) {
   const exportName = payload?.exportName;
   const args = Array.isArray(payload?.args) ? payload.args : [];
 
-  if (typeof moduleUrl !== 'string' || moduleUrl.length === 0) {
-    throw new Error('Missing module URL for sync call payload');
+  if (typeof moduleUrl !== "string" || moduleUrl.length === 0) {
+    throw new Error("Missing module URL for sync call payload");
   }
 
-  if (typeof exportName !== 'string' || exportName.length === 0) {
-    throw new Error('Missing export name for sync call payload');
+  if (typeof exportName !== "string" || exportName.length === 0) {
+    throw new Error("Missing export name for sync call payload");
   }
 
   const namespace = await import(moduleUrl);
   const target = namespace[exportName];
 
-  if (typeof target !== 'function') {
+  if (typeof target !== "function") {
     throw new Error(`Export "${exportName}" is not callable`);
   }
 
@@ -49,12 +49,17 @@ async function dispatch(payload) {
 function encodeWireValue(value) {
   if (Buffer.isBuffer(value)) {
     return {
-      __sandboxifyType: 'buffer',
-      base64: value.toString('base64'),
+      __sandboxifyType: "buffer",
+      base64: value.toString("base64"),
     };
   }
 
-  if (value == null || typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+  if (
+    value == null ||
+    typeof value === "string" ||
+    typeof value === "number" ||
+    typeof value === "boolean"
+  ) {
     return value;
   }
 
@@ -76,7 +81,12 @@ function encodeWireValue(value) {
 }
 
 function decodeWireValue(value) {
-  if (value == null || typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+  if (
+    value == null ||
+    typeof value === "string" ||
+    typeof value === "number" ||
+    typeof value === "boolean"
+  ) {
     return value;
   }
 
@@ -85,8 +95,8 @@ function decodeWireValue(value) {
   }
 
   if (Object.getPrototypeOf(value) === Object.prototype) {
-    if (value.__sandboxifyType === 'buffer') {
-      return Buffer.from(value.base64 ?? '', 'base64');
+    if (value.__sandboxifyType === "buffer") {
+      return Buffer.from(value.base64 ?? "", "base64");
     }
 
     const output = {};
@@ -96,12 +106,12 @@ function decodeWireValue(value) {
     return output;
   }
 
-  throw new Error('Experimental CJS sync mode received unsupported wire value');
+  throw new Error("Experimental CJS sync mode received unsupported wire value");
 }
 
 function serializeError(error) {
   return {
-    name: error?.name ?? 'Error',
+    name: error?.name ?? "Error",
     message: error?.message ?? String(error),
     stack: error?.stack,
     code: error?.code,

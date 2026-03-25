@@ -1,58 +1,67 @@
-import fs from 'node:fs';
+import fs from "node:fs";
 
 const moduleCache = new Map();
+const HELLO_RESPONSE = {
+  version: 1,
+  nodeVersion: process.version,
+  bucket: process.env.SANDBOXIFY_BUCKET ?? "unknown",
+  capabilities: {
+    supportsLoad: true,
+    supportsCall: true,
+    supportsCallMany: true,
+  },
+};
 
-process.on('message', async (message) => {
-  if (!message || message.t !== 'req') {
+process.on("message", (message) => {
+  if (!message || message.t !== "req") {
     return;
   }
 
   try {
-    const value = await dispatch(message.op, message.p ?? {});
-    process.send?.({ t: 'res', id: message.id, ok: true, v: value });
+    sendRpcValue(message.id, dispatch(message.op, message.p ?? {}));
   } catch (error) {
-    process.send?.({
-      t: 'res',
-      id: message.id,
-      ok: false,
-      e: serializeError(error),
-    });
+    sendRpcError(message.id, error);
   }
 });
 
-async function dispatch(op, payload) {
-  if (op === 'hello') {
-    return {
-      version: 1,
-      nodeVersion: process.version,
-      bucket: process.env.SANDBOXIFY_BUCKET ?? 'unknown',
-      capabilities: {
-        supportsLoad: true,
-        supportsCall: true,
-        supportsCallMany: true,
-      },
-    };
+function dispatch(op, payload) {
+  if (op === "hello") {
+    return HELLO_RESPONSE;
   }
 
-  if (op === 'load') {
+  if (op === "load") {
     return loadModule(payload);
   }
 
-  if (op === 'call') {
+  if (op === "call") {
     return callExport(payload);
   }
 
-  if (op === 'callMany') {
+  if (op === "callMany") {
     return callExportMany(payload);
   }
 
   throw new Error(`Unknown RPC operation: ${op}`);
 }
 
-async function loadModule({ moduleKey, url, exportNames }) {
+function loadModule({ moduleKey, url, exportNames }) {
   const key = moduleKey ?? url;
-  const namespace = await getModuleNamespace(key, url);
-  const names = Array.isArray(exportNames) && exportNames.length > 0 ? exportNames : Object.keys(namespace);
+  const namespace = getModuleNamespace(key, url);
+
+  if (isThenable(namespace)) {
+    return namespace.then((resolvedNamespace) =>
+      createLoadResponse(key, exportNames, resolvedNamespace),
+    );
+  }
+
+  return createLoadResponse(key, exportNames, namespace);
+}
+
+function createLoadResponse(key, exportNames, namespace) {
+  const names =
+    Array.isArray(exportNames) && exportNames.length > 0
+      ? exportNames
+      : Object.keys(namespace);
   const exports = {};
 
   for (const exportName of names) {
@@ -70,74 +79,231 @@ async function loadModule({ moduleKey, url, exportNames }) {
   };
 }
 
-async function callExport({ moduleKey, exportName, args }) {
-  const namespace = moduleCache.get(moduleKey);
-  if (!namespace) {
-    throw new Error(`Module not loaded: ${moduleKey}`);
-  }
-
+function callExport({ moduleKey, exportName, args, hasBlobRefs = false }) {
+  const namespace = getLoadedModuleNamespace(moduleKey);
   const target = namespace[exportName];
-  if (typeof target !== 'function') {
+  if (typeof target !== "function") {
     throw new Error(`Export \"${exportName}\" is not callable`);
   }
 
-  const resolvedArgs = decodeBlobReferences(Array.isArray(args) ? args : []);
-  const result = await target(...resolvedArgs);
-  if (!isCloneable(result)) {
-    throw new Error(`Return value for export \"${exportName}\" is not structured-cloneable`);
-  }
-
-  return { result };
+  const rawArgs = Array.isArray(args) ? args : [];
+  const resolvedArgs = hasBlobRefs ? decodeBlobReferences(rawArgs) : rawArgs;
+  return wrapRpcResult(target(...resolvedArgs), (result) => ({ result }));
 }
 
-async function callExportMany({ moduleKey, exportName, argsList }) {
-  const namespace = moduleCache.get(moduleKey);
-  if (!namespace) {
-    throw new Error(`Module not loaded: ${moduleKey}`);
+function callExportMany({
+  moduleKey,
+  exportName,
+  argsList,
+  hasBlobRefs = false,
+  emptyArgsCount = null,
+}) {
+  const namespace = getLoadedModuleNamespace(moduleKey);
+  const target = namespace[exportName];
+  if (typeof target !== "function") {
+    throw new Error(`Export \"${exportName}\" is not callable`);
   }
 
-  const target = namespace[exportName];
-  if (typeof target !== 'function') {
-    throw new Error(`Export \"${exportName}\" is not callable`);
+  if (Number.isInteger(emptyArgsCount) && emptyArgsCount >= 0) {
+    return callExportManyEmpty(target, emptyArgsCount);
   }
 
   const calls = Array.isArray(argsList) ? argsList : [];
   const results = [];
 
-  for (const entry of calls) {
-    const resolvedArgs = decodeBlobReferences(Array.isArray(entry) ? entry : []);
-    const value = await target(...resolvedArgs);
-    if (!isCloneable(value)) {
-      throw new Error(`Return value for export \"${exportName}\" is not structured-cloneable`);
+  for (let index = 0; index < calls.length; index += 1) {
+    const rawArgs = Array.isArray(calls[index]) ? calls[index] : [];
+    const resolvedArgs = hasBlobRefs ? decodeBlobReferences(rawArgs) : rawArgs;
+    const value = target(...resolvedArgs);
+    if (isThenable(value)) {
+      return finishCallExportManyAsync(
+        target,
+        calls,
+        results,
+        value,
+        index,
+        hasBlobRefs,
+      );
     }
     results.push(value);
+  }
+
+  return packBatchResults(results);
+}
+
+function callExportManyEmpty(target, count) {
+  const results = [];
+
+  for (let index = 0; index < count; index += 1) {
+    const value = target();
+    if (isThenable(value)) {
+      return finishCallExportManyEmptyAsync(target, count, results, value, index);
+    }
+    results.push(value);
+  }
+
+  return packBatchResults(results);
+}
+
+async function finishCallExportManyAsync(
+  target,
+  calls,
+  results,
+  firstPending,
+  startIndex,
+  hasBlobRefs,
+) {
+  results.push(await firstPending);
+
+  for (let index = startIndex + 1; index < calls.length; index += 1) {
+    const rawArgs = Array.isArray(calls[index]) ? calls[index] : [];
+    const resolvedArgs = hasBlobRefs ? decodeBlobReferences(rawArgs) : rawArgs;
+    results.push(await target(...resolvedArgs));
+  }
+
+  return packBatchResults(results);
+}
+
+async function finishCallExportManyEmptyAsync(
+  target,
+  count,
+  results,
+  firstPending,
+  startIndex,
+) {
+  results.push(await firstPending);
+
+  for (let index = startIndex + 1; index < count; index += 1) {
+    results.push(await target());
+  }
+
+  return packBatchResults(results);
+}
+
+function getModuleNamespace(key, url) {
+  const cached = moduleCache.get(key);
+  if (cached) {
+    return cached;
+  }
+
+  const namespacePromise = import(url).then(
+    (namespace) => {
+      moduleCache.set(key, namespace);
+      return namespace;
+    },
+    (error) => {
+      moduleCache.delete(key);
+      throw error;
+    },
+  );
+  moduleCache.set(key, namespacePromise);
+  return namespacePromise;
+}
+
+function getLoadedModuleNamespace(moduleKey) {
+  const namespace = moduleCache.get(moduleKey);
+  if (!namespace || isThenable(namespace)) {
+    throw new Error(`Module not loaded: ${moduleKey}`);
+  }
+
+  return namespace;
+}
+
+function sendRpcValue(id, value) {
+  if (isThenable(value)) {
+    value.then(
+      (resolvedValue) => {
+        process.send?.({ t: "res", id, ok: true, v: resolvedValue });
+      },
+      (error) => {
+        sendRpcError(id, error);
+      },
+    );
+    return;
+  }
+
+  process.send?.({ t: "res", id, ok: true, v: value });
+}
+
+function sendRpcError(id, error) {
+  process.send?.({
+    t: "res",
+    id,
+    ok: false,
+    e: serializeError(error),
+  });
+}
+
+function wrapRpcResult(value, wrap) {
+  if (isThenable(value)) {
+    return value.then((resolvedValue) => wrap(resolvedValue));
+  }
+
+  return wrap(value);
+}
+
+function packBatchResults(results) {
+  const repeated = encodeRepeatedResult(results);
+  if (repeated) {
+    return {
+      repeatedResult: repeated,
+    };
   }
 
   return { results };
 }
 
-async function getModuleNamespace(key, url) {
-  if (moduleCache.has(key)) {
-    return moduleCache.get(key);
+function encodeRepeatedResult(results) {
+  if (results.length < 2) {
+    return null;
   }
 
-  const namespace = await import(url);
-  moduleCache.set(key, namespace);
-  return namespace;
-}
-
-function describeExport(value) {
-  if (typeof value === 'function') {
-    return { kind: 'function' };
+  const first = results[0];
+  if (!isRepeatableBatchValue(first)) {
+    return null;
   }
 
-  if (isCloneable(value)) {
-    return { kind: 'value', value };
+  for (let index = 1; index < results.length; index += 1) {
+    if (!Object.is(results[index], first)) {
+      return null;
+    }
   }
 
   return {
-    kind: 'unsupported',
-    valueType: value === null ? 'null' : typeof value,
+    count: results.length,
+    value: first,
+  };
+}
+
+function isRepeatableBatchValue(value) {
+  return (
+    value == null ||
+    typeof value === "string" ||
+    typeof value === "number" ||
+    typeof value === "boolean"
+  );
+}
+
+function isThenable(value) {
+  return (
+    value != null &&
+    (typeof value === "object" || typeof value === "function") &&
+    typeof value.then === "function"
+  );
+}
+
+function describeExport(value) {
+  if (typeof value === "function") {
+    return { kind: "function" };
+  }
+
+  if (isCloneable(value)) {
+    return { kind: "value", value };
+  }
+
+  return {
+    kind: "unsupported",
+    valueType: value === null ? "null" : typeof value,
   };
 }
 
@@ -152,7 +318,7 @@ function isCloneable(value) {
 
 function serializeError(error) {
   return {
-    name: error?.name ?? 'Error',
+    name: error?.name ?? "Error",
     message: error?.message ?? String(error),
     stack: error?.stack,
     code: error?.code,
@@ -165,11 +331,11 @@ function decodeBlobReferences(value) {
     return value.map((entry) => decodeBlobReferences(entry));
   }
 
-  if (!value || typeof value !== 'object') {
+  if (!value || typeof value !== "object") {
     return value;
   }
 
-  if (value.__sandboxifyBlobRef === 1 && typeof value.file === 'string') {
+  if (value.__sandboxifyBlobRef === 1 && typeof value.file === "string") {
     const content = fs.readFileSync(value.file);
     try {
       fs.unlinkSync(value.file);
@@ -177,7 +343,7 @@ function decodeBlobReferences(value) {
       // noop
     }
 
-    if (value.as === 'uint8array') {
+    if (value.as === "uint8array") {
       return new Uint8Array(content);
     }
 

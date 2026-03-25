@@ -1,14 +1,14 @@
 export function parseJsonc(input) {
   const withoutComments = stripComments(input);
-  const withoutTrailingCommas = withoutComments.replace(/,\s*([}\]])/g, '$1');
+  const withoutTrailingCommas = withoutComments.replace(/,\s*([}\]])/g, "$1");
   return JSON.parse(withoutTrailingCommas);
 }
 
 function stripComments(input) {
-  let output = '';
+  let output = "";
   let index = 0;
   let inString = false;
-  let stringQuote = '';
+  let stringQuote = "";
 
   while (index < input.length) {
     const char = input[index];
@@ -16,14 +16,14 @@ function stripComments(input) {
 
     if (inString) {
       output += char;
-      if (char === '\\\\') {
-        output += next ?? '';
+      if (char === "\\\\") {
+        output += next ?? "";
         index += 2;
         continue;
       }
       if (char === stringQuote) {
         inString = false;
-        stringQuote = '';
+        stringQuote = "";
       }
       index += 1;
       continue;
@@ -37,17 +37,20 @@ function stripComments(input) {
       continue;
     }
 
-    if (char === '/' && next === '/') {
+    if (char === "/" && next === "/") {
       index += 2;
-      while (index < input.length && input[index] !== '\n') {
+      while (index < input.length && input[index] !== "\n") {
         index += 1;
       }
       continue;
     }
 
-    if (char === '/' && next === '*') {
+    if (char === "/" && next === "*") {
       index += 2;
-      while (index < input.length && !(input[index] === '*' && input[index + 1] === '/')) {
+      while (
+        index < input.length &&
+        !(input[index] === "*" && input[index + 1] === "/")
+      ) {
         index += 1;
       }
       index += 2;

@@ -1,22 +1,27 @@
 #!/usr/bin/env node
-import fs from 'node:fs';
-import path from 'node:path';
-import { buildManifest, readManifestSync } from '../manifest/index.js';
-import { loadPolicySync } from '../policy/index.js';
+import fs from "node:fs";
+import path from "node:path";
+import { buildManifest, readManifestSync } from "../manifest/index.js";
+import { loadPolicySync } from "../policy/index.js";
 
 const args = process.argv.slice(2);
 const command = args[0];
 
-const policyPath = getArgValue(args, '--policy') ?? process.env.SANDBOXIFY_POLICY_PATH ?? './sandboxify.policy.jsonc';
+const policyPath =
+  getArgValue(args, "--policy") ??
+  process.env.SANDBOXIFY_POLICY_PATH ??
+  "./sandboxify.policy.jsonc";
 const manifestPath =
-  getArgValue(args, '--manifest') ?? process.env.SANDBOXIFY_MANIFEST_PATH ?? './.sandboxify/exports.manifest.json';
+  getArgValue(args, "--manifest") ??
+  process.env.SANDBOXIFY_MANIFEST_PATH ??
+  "./.sandboxify/exports.manifest.json";
 
-if (command === 'build-manifest') {
+if (command === "build-manifest") {
   runBuildManifest().catch((error) => {
     console.error(`[sandboxify] build-manifest failed: ${error.message}`);
     process.exitCode = 1;
   });
-} else if (command === 'doctor') {
+} else if (command === "doctor") {
   runDoctor();
 } else {
   printUsage();
@@ -34,9 +39,14 @@ function runDoctor() {
   const issues = [];
   const warnings = [];
 
-  const nodeMajor = Number.parseInt(process.versions.node.split('.')[0] ?? '0', 10);
+  const nodeMajor = Number.parseInt(
+    process.versions.node.split(".")[0] ?? "0",
+    10,
+  );
   if (nodeMajor < 25) {
-    warnings.push('Node < 25 detected: allowNet permission flag is not enforceable.');
+    warnings.push(
+      "Node < 25 detected: allowNet permission flag is not enforceable.",
+    );
   }
 
   let policy;
@@ -46,10 +56,10 @@ function runDoctor() {
     issues.push(`Policy could not be loaded: ${error.message}`);
   }
 
-  let manifestStatus = 'missing';
+  let manifestStatus = "missing";
   const absoluteManifestPath = path.resolve(process.cwd(), manifestPath);
   if (fs.existsSync(absoluteManifestPath)) {
-    manifestStatus = 'present';
+    manifestStatus = "present";
     try {
       readManifestSync(manifestPath);
     } catch (error) {
@@ -57,7 +67,7 @@ function runDoctor() {
     }
   }
 
-  console.log('[sandboxify] doctor report');
+  console.log("[sandboxify] doctor report");
   console.log(`- node: ${process.version}`);
   console.log(`- policy: ${policyPath}`);
   console.log(`- manifest: ${manifestPath} (${manifestStatus})`);
@@ -81,7 +91,7 @@ function runDoctor() {
     return;
   }
 
-  console.log('- status: ok');
+  console.log("- status: ok");
 }
 
 function getArgValue(argsList, key) {
@@ -94,13 +104,13 @@ function getArgValue(argsList, key) {
 }
 
 function printUsage() {
-  console.log('sandboxify <command> [options]');
-  console.log('');
-  console.log('Commands:');
-  console.log('  build-manifest   Build .sandboxify/exports.manifest.json');
-  console.log('  doctor           Run basic compatibility checks');
-  console.log('');
-  console.log('Options:');
-  console.log('  --policy <path>    Policy JSON/JSONC path');
-  console.log('  --manifest <path>  Manifest output path');
+  console.log("sandboxify <command> [options]");
+  console.log("");
+  console.log("Commands:");
+  console.log("  build-manifest   Build .sandboxify/exports.manifest.json");
+  console.log("  doctor           Run basic compatibility checks");
+  console.log("");
+  console.log("Options:");
+  console.log("  --policy <path>    Policy JSON/JSONC path");
+  console.log("  --manifest <path>  Manifest output path");
 }

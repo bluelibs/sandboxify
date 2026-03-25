@@ -1,17 +1,17 @@
 export function makePayload(type, sizeBytes) {
-  if (type === 'buffer') {
+  if (type === "buffer") {
     return Buffer.alloc(sizeBytes, 97);
   }
 
-  if (type === 'uint8array') {
+  if (type === "uint8array") {
     return new Uint8Array(sizeBytes).fill(7);
   }
 
-  if (type === 'json') {
+  if (type === "json") {
     return {
-      tag: 'json',
+      tag: "json",
       bytes: sizeBytes,
-      data: 'x'.repeat(sizeBytes),
+      data: "x".repeat(sizeBytes),
     };
   }
 
@@ -27,7 +27,7 @@ export function estimatePayloadBytes(payload) {
     return payload.byteLength;
   }
 
-  if (payload && typeof payload === 'object') {
+  if (payload && typeof payload === "object") {
     return Buffer.byteLength(JSON.stringify(payload));
   }
 

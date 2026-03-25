@@ -16,16 +16,16 @@
     "./register": "./register.mjs",
     "./register-cjs": "./register-cjs.cjs"
   },
-    "imports": {
-      "#sandboxify-bench-target": "./bench/fixtures/bench-target/index.mjs"
-    },
+  "imports": {
+    "#sandboxify-bench-target": "./bench/fixtures/bench-target/index.mjs"
+  },
   "scripts": {
     "test": "node --test --test-timeout=30000 test/*.test.js",
     "build-manifest": "node ./src/cli/index.js build-manifest",
     "doctor": "node ./src/cli/index.js doctor",
-      "bench": "npm run bench:smoke",
-      "bench:smoke": "node ./bench/run.mjs --profile smoke",
-      "bench:full": "node ./bench/run.mjs --profile full"
+    "bench": "npm run bench:smoke",
+    "bench:smoke": "node ./bench/run.mjs --profile smoke",
+    "bench:full": "node ./bench/run.mjs --profile full"
   },
   "engines": {
     "node": ">=25"

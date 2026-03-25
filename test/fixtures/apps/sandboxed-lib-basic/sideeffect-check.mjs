@@ -1,3 +1,3 @@
-import 'sideeffect-lib';
+import "sideeffect-lib";
 
-console.log('SIDEEFFECT_READY', true);
+console.log("SIDEEFFECT_READY", true);

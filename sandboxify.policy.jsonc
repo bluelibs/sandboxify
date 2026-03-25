@@ -9,10 +9,10 @@
       "allowWorker": false,
       "allowAddons": false,
       "allowWasi": false,
-      "allowInspector": false
-    }
+      "allowInspector": false,
+    },
   },
   "packages": {
-    "*": "cpu_only"
-  }
+    "*": "cpu_only",
+  },
 }

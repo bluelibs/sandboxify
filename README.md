@@ -5,6 +5,7 @@ Sandbox selected dependencies in separate Node processes with Node’s Permissio
 ## Quickstart (Node 25)
 
 Requirements:
+
 - Node `25.x`
 - ESM app (`.mjs` or `"type": "module"`) for best compatibility
 
@@ -25,7 +26,7 @@ Create `sandboxify.policy.jsonc`:
       "allowFsWrite": [],
       "allowChildProcess": false,
       "allowWorker": false,
-      "allowAddons": false
+      "allowAddons": false,
     },
     "fs_ro_templates": {
       "allowNet": false,
@@ -33,14 +34,14 @@ Create `sandboxify.policy.jsonc`:
       "allowFsWrite": [],
       "allowChildProcess": false,
       "allowWorker": false,
-      "allowAddons": false
-    }
+      "allowAddons": false,
+    },
   },
   "packages": {
     "markdown-it": "cpu_only",
     "handlebars": "cpu_only",
-    "nunjucks": "fs_ro_templates"
-  }
+    "nunjucks": "fs_ro_templates",
+  },
 }
 ```
 
@@ -53,8 +54,8 @@ import { createSandboxHooks } from "sandboxify/loader";
 registerHooks(
   createSandboxHooks({
     policyPath: "./sandboxify.policy.jsonc",
-    manifestPath: "./.sandboxify/exports.manifest.json"
-  })
+    manifestPath: "./.sandboxify/exports.manifest.json",
+  }),
 );
 ```
 
@@ -85,12 +86,14 @@ node -r ./register-cjs.cjs ./src/index.cjs
 ```
 
 Practical CJS behavior:
+
 - Package selection still follows `sandboxify.policy.jsonc`
 - `require("pkg")` returns a sandbox proxy object
 - Function exports can be called and return Promises
 - Existing ESM flow (`--import .../register.mjs`) is unchanged
 
 How CJS works under the hood (default mode):
+
 1. `register-cjs.cjs` patches `Module._load`.
 2. For matched packages, it routes calls to a bucketed sandbox host over IPC.
 3. `require("pkg")` returns callable proxy functions.
@@ -106,11 +109,13 @@ SANDBOXIFY_CJS_SYNC_EXPERIMENTAL=1 node -r sandboxify/register-cjs ./src/index.c
 ```
 
 What it does:
+
 - keeps the sandbox process boundary
 - attempts synchronous function calls for JSON-compatible and `Buffer` args/returns
 - preserves the default async CJS mode when the flag is not set
 
 How `SYNC_EXPERIMENTAL` is achieved:
+
 1. Enable with `SANDBOXIFY_CJS_SYNC_EXPERIMENTAL=1`.
 2. The CJS loader still intercepts `require`, but function calls are no longer routed to the long-lived async IPC client.
 3. Each call is encoded into a strict wire format (JSON + `Buffer` as base64).
@@ -119,11 +124,13 @@ How `SYNC_EXPERIMENTAL` is achieved:
 6. The caller receives a synchronous return value (or synchronous throw).
 
 Why this is explicitly experimental:
+
 - very high per-call overhead (process spawn + module load + serialization every call)
 - only payloads that can be safely encoded/decoded are supported
 - intentionally not transparent for complex runtime objects or handles
 
 Caveats (experimental):
+
 - implemented via a blocking per-call sandbox process broker, so latency/throughput are significantly worse than async mode
 - only supports function exports whose args/returns are JSON-compatible values or `Buffer`
 - unsupported payloads (streams, sockets, class instances, custom prototypes) throw explicit errors
@@ -131,7 +138,7 @@ Caveats (experimental):
 
 ## Importer-based policy rules (`importerRules`)
 
-In addition to top-level `packages` matching, you can target based on *who imports* a package:
+In addition to top-level `packages` matching, you can target based on _who imports_ a package:
 
 ```jsonc
 {
@@ -139,13 +146,14 @@ In addition to top-level `packages` matching, you can target based on *who impor
     {
       "importer": "file:///app/src/restricted/*",
       "specifier": "sandboxed-lib",
-      "bucket": "cpu_only"
-    }
-  ]
+      "bucket": "cpu_only",
+    },
+  ],
 }
 ```
 
 Rule precedence:
+
 - more specific `specifier` wins
 - then more specific `importer` wins
 - fallback goes to `packages` mapping
@@ -153,6 +161,7 @@ Rule precedence:
 ## TypeScript guidance
 
 Recommended setup:
+
 - Compile TS to JS first (`tsc`, swc, esbuild, etc.)
 - Run sandboxify against emitted JS (`dist/`), not raw `.ts`
 - Build/refresh manifest after install/build changes: `npx sandboxify build-manifest`
@@ -171,6 +180,7 @@ Example scripts:
 ```
 
 TS caveats:
+
 - No source-map-level policy matching: policy matches runtime specifiers
 - CJS proxy behavior is runtime JS behavior; typings may need local wrappers
 - Keep app-side APIs async-friendly when crossing sandbox boundaries
@@ -196,11 +206,13 @@ npx sandboxify doctor
 `sandboxify` is ESM-first. The default flow uses ESM loader hooks and generated stubs so imports like `import x from "pkg"` stay close to normal.
 
 Sandboxed package calls cross a process boundary, so keep APIs RPC-friendly:
+
 - Prefer structured-cloneable args/returns (plain objects, arrays, strings, numbers, booleans, null, typed arrays)
 - Avoid stream/socket/file-handle return types
 - Avoid relying on prototype identity (`instanceof`) across boundaries
 
 Batching optimization for hot paths:
+
 - sandboxed function proxies support `fn.batch([[...args], [...args]])`
 - this collapses many RPC calls into a single `callMany` request
 - ideal when one dependency function is called repeatedly with small payloads
@@ -208,18 +220,19 @@ Batching optimization for hot paths:
 Example:
 
 ```js
-import { add } from 'sandboxed-lib';
+import { add } from "sandboxed-lib";
 
 const values = await add.batch([
   [1, 2],
   [3, 4],
-  [5, 6]
+  [5, 6],
 ]);
 ```
 
 ## Explicit limitations (transparency boundaries)
 
 Some fully transparent behavior is impossible with current Node constraints:
+
 - CJS `require()` is synchronous, while sandbox module load/call is RPC and asynchronous
 - CJS interception therefore prioritizes callable exports; non-function value exports are not transparently mirrored
 - Cross-process identity is not preserved (`instanceof`, class prototypes, symbols tied to realm)
@@ -228,6 +241,7 @@ Some fully transparent behavior is impossible with current Node constraints:
 - Experimental `SANDBOXIFY_CJS_SYNC_EXPERIMENTAL=1` mode blocks the caller and uses a high-overhead sync broker per call
 
 Network side effects:
+
 - if a package performs network operations at import-time, `allowNet: false` fails the import immediately
 - with `allowNet: true` (Node 25+), that same import-time path can succeed
 
@@ -262,14 +276,17 @@ npm run bench:full
 ```
 
 The harness compares:
+
 - `native`: direct in-process import/call
 - `bypass`: loader path enabled with `SANDBOXIFY_DISABLE=1`
 - `sandbox`: full sandbox runtime enabled
 
 It also includes a batched RPC scenario:
+
 - `rpc-batch-noop-<N>` to measure `fn.batch(...)` style amortization of RPC overhead
 
 Outputs:
+
 - JSON: `bench/results/<timestamp>-<profile>.json`
 - Latest alias: `bench/results/latest-<profile>.json`
 - Summary: `bench/REPORT.md`
@@ -283,11 +300,13 @@ SANDBOXIFY_IPC_BLOB_THRESHOLD_BYTES=262144 node --import ./register.mjs ./src/in
 ```
 
 Behavior:
+
 - For `call` RPC arguments above the threshold, runtime writes the binary payload to a temp blob file.
 - IPC message sends a lightweight reference object instead of the full bytes.
 - Sandbox host reads the blob and replaces it with the original binary value before invoking the export.
 
 Notes:
+
 - Set threshold to `0` to disable offload.
 - This currently optimizes **arguments** only (not return payloads).
 - Best for request-heavy large-binary call patterns; for tiny payloads, default IPC is usually better.
@@ -299,6 +318,7 @@ cat ./bench/REPORT.md
 ```
 
 Latest smoke result file from this run:
+
 - `bench/results/2026-03-02T15-10-13-815Z-smoke.json`
 - Alias: `bench/results/latest-smoke.json`
 

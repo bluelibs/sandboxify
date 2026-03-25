@@ -1,3 +1,3 @@
-import { bufferSize } from 'sandboxed-lib';
+import { bufferSize } from "sandboxed-lib";
 
-console.log('BUFFER_SIZE', await bufferSize(Buffer.from('hello')));
+console.log("BUFFER_SIZE", await bufferSize(Buffer.from("hello")));

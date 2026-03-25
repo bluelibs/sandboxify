@@ -1,4 +1,4 @@
-import { add } from 'sandboxed-lib';
+import { add } from "sandboxed-lib";
 
 const values = await add.batch([
   [1, 2],
@@ -6,4 +6,4 @@ const values = await add.batch([
   [5, 6],
 ]);
 
-console.log('BATCH_RESULT', values.join(','));
+console.log("BATCH_RESULT", values.join(","));

@@ -1,10 +1,15 @@
-import { loadPolicySync } from '../policy/index.js';
-import { RuntimePool } from './pool.js';
+import { loadPolicySync } from "../policy/index.js";
+import { RuntimePool } from "./pool.js";
 
 let runtimePool = null;
 let cleanupHooksRegistered = false;
 
-export async function getRemoteModule({ bucket, specifier, realUrl, exportNames }) {
+export async function getRemoteModule({
+  bucket,
+  specifier,
+  realUrl,
+  exportNames,
+}) {
   const pool = getRuntimePool();
   return pool.getRemoteModule({ bucket, specifier, realUrl, exportNames });
 }
@@ -14,7 +19,8 @@ export function getRuntimePool() {
     return runtimePool;
   }
 
-  const policyPath = process.env.SANDBOXIFY_POLICY_PATH ?? './sandboxify.policy.jsonc';
+  const policyPath =
+    process.env.SANDBOXIFY_POLICY_PATH ?? "./sandboxify.policy.jsonc";
   const policy = loadPolicySync(policyPath);
   runtimePool = new RuntimePool(policy);
   registerCleanupHooks();
@@ -42,11 +48,11 @@ function registerCleanupHooks() {
     }
   };
 
-  process.once('SIGINT', () => {
+  process.once("SIGINT", () => {
     closePool();
     process.exit(130);
   });
-  process.once('SIGTERM', () => {
+  process.once("SIGTERM", () => {
     closePool();
     process.exit(143);
   });

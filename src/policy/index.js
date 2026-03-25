@@ -1,15 +1,15 @@
-import fs from 'node:fs';
-import path from 'node:path';
-import { parseJsonc } from './jsonc.js';
+import fs from "node:fs";
+import path from "node:path";
+import { parseJsonc } from "./jsonc.js";
 
-export function loadPolicySync(policyPath = './sandboxify.policy.jsonc') {
+export function loadPolicySync(policyPath = "./sandboxify.policy.jsonc") {
   const absolutePath = path.resolve(process.cwd(), policyPath);
-  const raw = fs.readFileSync(absolutePath, 'utf8');
+  const raw = fs.readFileSync(absolutePath, "utf8");
   const parsed = parseJsonc(raw);
   return normalizePolicy(parsed, absolutePath);
 }
 
-export function normalizePolicy(policy, sourcePath = '') {
+export function normalizePolicy(policy, sourcePath = "") {
   const buckets = {};
   const inputBuckets = policy?.buckets ?? {};
 
@@ -23,44 +23,59 @@ export function normalizePolicy(policy, sourcePath = '') {
 
   for (const [pattern, bucketName] of Object.entries(inputPackages)) {
     if (!buckets[bucketName]) {
-      throw new Error(`Policy references unknown bucket \"${bucketName}\" for pattern \"${pattern}\" (${sourcePath || 'unknown source'})`);
+      throw new Error(
+        `Policy references unknown bucket \"${bucketName}\" for pattern \"${pattern}\" (${sourcePath || "unknown source"})`,
+      );
     }
 
-    if (pattern.endsWith('*')) {
-      packageMappings.push({ type: 'wildcard', pattern, prefix: pattern.slice(0, -1), bucket: bucketName });
+    if (pattern.endsWith("*")) {
+      packageMappings.push({
+        type: "wildcard",
+        pattern,
+        prefix: pattern.slice(0, -1),
+        bucket: bucketName,
+      });
     } else {
-      packageMappings.push({ type: 'exact', pattern, bucket: bucketName });
+      packageMappings.push({ type: "exact", pattern, bucket: bucketName });
     }
   }
 
   packageMappings.sort((a, b) => {
-    if (a.type === 'exact' && b.type !== 'exact') return -1;
-    if (a.type !== 'exact' && b.type === 'exact') return 1;
-    if (a.type === 'wildcard' && b.type === 'wildcard') {
+    if (a.type === "exact" && b.type !== "exact") return -1;
+    if (a.type !== "exact" && b.type === "exact") return 1;
+    if (a.type === "wildcard" && b.type === "wildcard") {
       return b.prefix.length - a.prefix.length;
     }
     return 0;
   });
 
-  const inputImporterRules = Array.isArray(policy?.importerRules) ? policy.importerRules : [];
+  const inputImporterRules = Array.isArray(policy?.importerRules)
+    ? policy.importerRules
+    : [];
   for (const rule of inputImporterRules) {
-    if (!rule || typeof rule !== 'object') {
+    if (!rule || typeof rule !== "object") {
       continue;
     }
 
     const bucketName = rule.bucket;
     if (!buckets[bucketName]) {
-      throw new Error(`Policy importerRules references unknown bucket "${bucketName}" (${sourcePath || 'unknown source'})`);
+      throw new Error(
+        `Policy importerRules references unknown bucket "${bucketName}" (${sourcePath || "unknown source"})`,
+      );
     }
 
-    const importerPattern = typeof rule.importer === 'string' ? rule.importer : '*';
-    const specifierPattern = typeof rule.specifier === 'string' ? rule.specifier : '*';
+    const importerPattern =
+      typeof rule.importer === "string" ? rule.importer : "*";
+    const specifierPattern =
+      typeof rule.specifier === "string" ? rule.specifier : "*";
 
-    importerRules.push(normalizeImporterRule({
-      importerPattern,
-      specifierPattern,
-      bucket: bucketName,
-    }));
+    importerRules.push(
+      normalizeImporterRule({
+        importerPattern,
+        specifierPattern,
+        bucket: bucketName,
+      }),
+    );
   }
 
   importerRules.sort(compareImporterRules);
@@ -76,10 +91,13 @@ export function normalizePolicy(policy, sourcePath = '') {
 export function createPolicyMatcher(policy) {
   const exact = new Map();
   const wildcard = [];
-  const importerRules = Array.isArray(policy.importerRules) ? policy.importerRules : [];
+  const importerRules = Array.isArray(policy.importerRules)
+    ? policy.importerRules
+    : [];
+  const cache = new Map();
 
   for (const mapping of policy.packageMappings ?? []) {
-    if (mapping.type === 'exact') {
+    if (mapping.type === "exact") {
       exact.set(mapping.pattern, mapping.bucket);
     } else {
       wildcard.push(mapping);
@@ -89,31 +107,45 @@ export function createPolicyMatcher(policy) {
   wildcard.sort((a, b) => b.prefix.length - a.prefix.length);
 
   return {
-    match(specifier, parentUrl = '') {
+    match(specifier, parentUrl = "") {
+      const cacheKey = `${parentUrl}\u0000${specifier}`;
+      if (cache.has(cacheKey)) {
+        return cache.get(cacheKey);
+      }
+
+      let bucket = null;
+
       if (importerRules.length > 0) {
         for (const rule of importerRules) {
           if (!patternMatches(rule.specifierMatcher, specifier)) {
             continue;
           }
 
-          if (!patternMatches(rule.importerMatcher, parentUrl || '')) {
+          if (!patternMatches(rule.importerMatcher, parentUrl || "")) {
             continue;
           }
 
-          return rule.bucket;
+          bucket = rule.bucket;
+          cache.set(cacheKey, bucket);
+          return bucket;
         }
       }
 
       if (exact.has(specifier)) {
-        return exact.get(specifier);
+        bucket = exact.get(specifier);
+        cache.set(cacheKey, bucket);
+        return bucket;
       }
 
       for (const mapping of wildcard) {
         if (specifier.startsWith(mapping.prefix)) {
-          return mapping.bucket;
+          bucket = mapping.bucket;
+          cache.set(cacheKey, bucket);
+          return bucket;
         }
       }
 
+      cache.set(cacheKey, null);
       return null;
     },
   };
@@ -131,7 +163,7 @@ function normalizeImporterRule({ importerPattern, specifierPattern, bucket }) {
 
 function compareImporterRules(a, b) {
   if (a.specifierMatcher.type !== b.specifierMatcher.type) {
-    return a.specifierMatcher.type === 'exact' ? -1 : 1;
+    return a.specifierMatcher.type === "exact" ? -1 : 1;
   }
 
   if (a.specifierMatcher.anchorLength !== b.specifierMatcher.anchorLength) {
@@ -139,31 +171,31 @@ function compareImporterRules(a, b) {
   }
 
   if (a.importerMatcher.type !== b.importerMatcher.type) {
-    return a.importerMatcher.type === 'exact' ? -1 : 1;
+    return a.importerMatcher.type === "exact" ? -1 : 1;
   }
 
   return b.importerMatcher.anchorLength - a.importerMatcher.anchorLength;
 }
 
 function toPatternMatcher(pattern) {
-  if (pattern === '*') {
-    return { type: 'any', anchorLength: 0, anchor: '' };
+  if (pattern === "*") {
+    return { type: "any", anchorLength: 0, anchor: "" };
   }
 
-  if (pattern.endsWith('*')) {
+  if (pattern.endsWith("*")) {
     const anchor = pattern.slice(0, -1);
-    return { type: 'prefix', anchorLength: anchor.length, anchor };
+    return { type: "prefix", anchorLength: anchor.length, anchor };
   }
 
-  return { type: 'exact', anchorLength: pattern.length, anchor: pattern };
+  return { type: "exact", anchorLength: pattern.length, anchor: pattern };
 }
 
 function patternMatches(matcher, value) {
-  if (matcher.type === 'any') {
+  if (matcher.type === "any") {
     return true;
   }
 
-  if (matcher.type === 'prefix') {
+  if (matcher.type === "prefix") {
     return value.startsWith(matcher.anchor);
   }
 
@@ -194,7 +226,7 @@ function normalizeAllowNet(value) {
 }
 
 function normalizePathList(value) {
-  if (value === '*' || value === false) {
+  if (value === "*" || value === false) {
     return value;
   }
 
@@ -206,7 +238,7 @@ function normalizePathList(value) {
 }
 
 function normalizeEnv(value) {
-  if (!value || typeof value !== 'object') {
+  if (!value || typeof value !== "object") {
     return {};
   }
 

@@ -1,14 +1,18 @@
-const fs = require('node:fs');
-const path = require('node:path');
-const { pathToFileURL } = require('node:url');
-const { spawn, spawnSync } = require('node:child_process');
-const Module = require('node:module');
+const fs = require("node:fs");
+const path = require("node:path");
+const { pathToFileURL } = require("node:url");
+const { spawn, spawnSync } = require("node:child_process");
+const Module = require("node:module");
 
-const CJS_SYNC_EXPERIMENTAL_ENABLED = process.env.SANDBOXIFY_CJS_SYNC_EXPERIMENTAL === '1';
+const CJS_SYNC_EXPERIMENTAL_ENABLED =
+  process.env.SANDBOXIFY_CJS_SYNC_EXPERIMENTAL === "1";
 
 function installCjsRequireHook() {
-  const policyPath = process.env.SANDBOXIFY_POLICY_PATH ?? './sandboxify.policy.jsonc';
-  const manifestPath = process.env.SANDBOXIFY_MANIFEST_PATH ?? './.sandboxify/exports.manifest.json';
+  const policyPath =
+    process.env.SANDBOXIFY_POLICY_PATH ?? "./sandboxify.policy.jsonc";
+  const manifestPath =
+    process.env.SANDBOXIFY_MANIFEST_PATH ??
+    "./.sandboxify/exports.manifest.json";
   const policy = loadPolicySync(policyPath);
   const matcher = createPolicyMatcher(policy);
   const manifest = readManifestSafe(manifestPath);
@@ -16,7 +20,9 @@ function installCjsRequireHook() {
   const originalLoad = Module._load;
 
   Module._load = function sandboxifyLoad(request, parent, isMain) {
-    const parentUrl = parent?.filename ? pathToFileURL(parent.filename).href : '';
+    const parentUrl = parent?.filename
+      ? pathToFileURL(parent.filename).href
+      : "";
     const bucket = matcher.match(request, parentUrl);
     if (!bucket) {
       return originalLoad.apply(this, arguments);
@@ -76,7 +82,7 @@ class CjsRuntimePool {
       const loadPromise = client
         .ensureHello()
         .then(() =>
-          client.request('load', {
+          client.request("load", {
             moduleKey,
             specifier,
             url: realUrl,
@@ -98,16 +104,18 @@ class CjsRuntimePool {
       const descriptors = this.exportDescriptorsByKey.get(cacheKey) ?? {};
       const descriptor = descriptors[exportName];
       if (!descriptor) {
-        throw new Error(`Export "${String(exportName)}" was not found for ${specifier}`);
-      }
-
-      if (descriptor.kind !== 'function') {
         throw new Error(
-          `CJS require proxy can only call function exports. "${String(exportName)}" is ${descriptor.kind ?? 'unknown'}.`,
+          `Export "${String(exportName)}" was not found for ${specifier}`,
         );
       }
 
-      const response = await client.request('call', {
+      if (descriptor.kind !== "function") {
+        throw new Error(
+          `CJS require proxy can only call function exports. "${String(exportName)}" is ${descriptor.kind ?? "unknown"}.`,
+        );
+      }
+
+      const response = await client.request("call", {
         moduleKey,
         exportName,
         args: Array.isArray(args) ? args : [],
@@ -134,15 +142,15 @@ class CjsRuntimePool {
 
     const proxy = new Proxy(target, {
       get(obj, prop) {
-        if (prop === '__esModule') {
+        if (prop === "__esModule") {
           return true;
         }
 
-        if (prop === 'then') {
+        if (prop === "then") {
           return undefined;
         }
 
-        if (typeof prop !== 'string') {
+        if (typeof prop !== "string") {
           return Reflect.get(obj, prop);
         }
 
@@ -160,7 +168,13 @@ class CjsRuntimePool {
     return proxy;
   }
 
-  createExperimentalSyncProxy({ cacheKey, bucket, specifier, realUrl, exportNames }) {
+  createExperimentalSyncProxy({
+    cacheKey,
+    bucket,
+    specifier,
+    realUrl,
+    exportNames,
+  }) {
     if (this.proxyCache.has(cacheKey)) {
       return this.proxyCache.get(cacheKey);
     }
@@ -195,15 +209,15 @@ class CjsRuntimePool {
 
     const proxy = new Proxy(target, {
       get(obj, prop) {
-        if (prop === '__esModule') {
+        if (prop === "__esModule") {
           return true;
         }
 
-        if (prop === 'then') {
+        if (prop === "then") {
           return undefined;
         }
 
-        if (typeof prop !== 'string') {
+        if (typeof prop !== "string") {
           return Reflect.get(obj, prop);
         }
 
@@ -270,7 +284,11 @@ class CjsSyncInvoker {
   }
 
   call(payload) {
-    const response = runSyncSandboxCall(this.bucketName, this.bucketPolicy, payload);
+    const response = runSyncSandboxCall(
+      this.bucketName,
+      this.bucketPolicy,
+      payload,
+    );
     return response?.result;
   }
 }
@@ -285,17 +303,19 @@ class CjsRpcClient {
     this.proc = spawnSandboxHost(bucketName, bucketPolicy);
     this.updateRefState();
 
-    this.proc.on('message', (msg) => this.onMessage(msg));
-    this.proc.on('error', (error) => {
+    this.proc.on("message", (msg) => this.onMessage(msg));
+    this.proc.on("error", (error) => {
       this.exited = true;
       for (const [, pending] of this.pending) {
         pending.reject(error);
       }
       this.pending.clear();
     });
-    this.proc.on('exit', (code, signal) => {
+    this.proc.on("exit", (code, signal) => {
       this.exited = true;
-      const reason = new Error(`Sandbox process exited for bucket ${bucketName} (code=${code}, signal=${signal})`);
+      const reason = new Error(
+        `Sandbox process exited for bucket ${bucketName} (code=${code}, signal=${signal})`,
+      );
       for (const [, pending] of this.pending) {
         pending.reject(reason);
       }
@@ -316,13 +336,13 @@ class CjsRpcClient {
     } catch {}
 
     try {
-      this.proc.kill('SIGTERM');
+      this.proc.kill("SIGTERM");
     } catch {}
   }
 
   ensureHello() {
     if (!this.helloPromise) {
-      this.helloPromise = this.request('hello', { bucket: this.bucketName });
+      this.helloPromise = this.request("hello", { bucket: this.bucketName });
     }
 
     return this.helloPromise;
@@ -330,11 +350,15 @@ class CjsRpcClient {
 
   request(op, payload) {
     if (this.exited) {
-      return Promise.reject(new Error(`Sandbox process is not available for bucket ${this.bucketName}`));
+      return Promise.reject(
+        new Error(
+          `Sandbox process is not available for bucket ${this.bucketName}`,
+        ),
+      );
     }
 
     const id = this.nextId++;
-    const message = { t: 'req', id, op, p: payload };
+    const message = { t: "req", id, op, p: payload };
 
     return new Promise((resolve, reject) => {
       this.pending.set(id, { resolve, reject });
@@ -350,7 +374,7 @@ class CjsRpcClient {
   }
 
   onMessage(message) {
-    if (!message || message.t !== 'res') {
+    if (!message || message.t !== "res") {
       return;
     }
 
@@ -383,7 +407,7 @@ class CjsRpcClient {
 }
 
 function spawnSandboxHost(bucketName, bucketPolicy) {
-  const hostEntry = path.resolve(__dirname, 'src', 'host', 'index.js');
+  const hostEntry = path.resolve(__dirname, "src", "host", "index.js");
   const args = [...buildPermissionArgs(bucketPolicy, hostEntry), hostEntry];
 
   return spawn(process.execPath, args, {
@@ -393,13 +417,13 @@ function spawnSandboxHost(bucketName, bucketPolicy) {
       ...bucketPolicy.env,
       SANDBOXIFY_BUCKET: bucketName,
     },
-    stdio: ['ignore', 'ignore', 'ignore', 'ipc'],
-    serialization: 'advanced',
+    stdio: ["ignore", "ignore", "ignore", "ipc"],
+    serialization: "advanced",
   });
 }
 
 function runSyncSandboxCall(bucketName, bucketPolicy, payload) {
-  const hostEntry = path.resolve(__dirname, 'src', 'host', 'sync-call.js');
+  const hostEntry = path.resolve(__dirname, "src", "host", "sync-call.js");
   const args = [...buildPermissionArgs(bucketPolicy, hostEntry), hostEntry];
   const requestWire = JSON.stringify(encodeSyncWireValue(payload));
 
@@ -410,9 +434,9 @@ function runSyncSandboxCall(bucketName, bucketPolicy, payload) {
       ...bucketPolicy.env,
       SANDBOXIFY_BUCKET: bucketName,
     },
-    stdio: ['pipe', 'pipe', 'pipe'],
+    stdio: ["pipe", "pipe", "pipe"],
     input: requestWire,
-    encoding: 'utf8',
+    encoding: "utf8",
     maxBuffer: 8 * 1024 * 1024,
   });
 
@@ -422,19 +446,21 @@ function runSyncSandboxCall(bucketName, bucketPolicy, payload) {
 
   if (result.status !== 0) {
     throw new Error(
-      `Experimental sync sandbox call failed for bucket ${bucketName} (status=${result.status}): ${String(result.stderr || '').trim()}`,
+      `Experimental sync sandbox call failed for bucket ${bucketName} (status=${result.status}): ${String(result.stderr || "").trim()}`,
     );
   }
 
   let parsed;
   try {
-    parsed = JSON.parse(result.stdout || '{}');
+    parsed = JSON.parse(result.stdout || "{}");
   } catch {
-    throw new Error(`Experimental sync sandbox call returned invalid JSON: ${String(result.stdout || '').trim()}`);
+    throw new Error(
+      `Experimental sync sandbox call returned invalid JSON: ${String(result.stdout || "").trim()}`,
+    );
   }
 
-  if (!parsed || typeof parsed !== 'object') {
-    throw new Error('Experimental sync sandbox call returned empty response');
+  if (!parsed || typeof parsed !== "object") {
+    throw new Error("Experimental sync sandbox call returned empty response");
   }
 
   if (parsed.ok !== true) {
@@ -447,12 +473,17 @@ function runSyncSandboxCall(bucketName, bucketPolicy, payload) {
 function encodeSyncWireValue(value) {
   if (Buffer.isBuffer(value)) {
     return {
-      __sandboxifyType: 'buffer',
-      base64: value.toString('base64'),
+      __sandboxifyType: "buffer",
+      base64: value.toString("base64"),
     };
   }
 
-  if (value == null || typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+  if (
+    value == null ||
+    typeof value === "string" ||
+    typeof value === "number" ||
+    typeof value === "boolean"
+  ) {
     return value;
   }
 
@@ -474,7 +505,12 @@ function encodeSyncWireValue(value) {
 }
 
 function decodeSyncWireValue(value) {
-  if (value == null || typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+  if (
+    value == null ||
+    typeof value === "string" ||
+    typeof value === "number" ||
+    typeof value === "boolean"
+  ) {
     return value;
   }
 
@@ -483,8 +519,8 @@ function decodeSyncWireValue(value) {
   }
 
   if (Object.getPrototypeOf(value) === Object.prototype) {
-    if (value.__sandboxifyType === 'buffer') {
-      return Buffer.from(value.base64 ?? '', 'base64');
+    if (value.__sandboxifyType === "buffer") {
+      return Buffer.from(value.base64 ?? "", "base64");
     }
 
     const output = {};
@@ -494,27 +530,30 @@ function decodeSyncWireValue(value) {
     return output;
   }
 
-  throw new Error('Experimental CJS sync mode returned unsupported wire value');
+  throw new Error("Experimental CJS sync mode returned unsupported wire value");
 }
 
 function buildPermissionArgs(bucket, hostEntry) {
-  const args = ['--permission'];
+  const args = ["--permission"];
   const hostDir = path.dirname(hostEntry);
   args.push(`--allow-fs-read=${hostDir}`);
 
-  pushFsArgs(args, '--allow-fs-read', bucket.allowFsRead);
-  pushFsArgs(args, '--allow-fs-write', bucket.allowFsWrite);
+  pushFsArgs(args, "--allow-fs-read", bucket.allowFsRead);
+  pushFsArgs(args, "--allow-fs-write", bucket.allowFsWrite);
 
-  const nodeMajor = Number.parseInt(process.versions.node.split('.')[0] ?? '0', 10);
+  const nodeMajor = Number.parseInt(
+    process.versions.node.split(".")[0] ?? "0",
+    10,
+  );
   if (nodeMajor >= 25 && bucket.allowNet === true) {
-    args.push('--allow-net');
+    args.push("--allow-net");
   }
 
-  if (bucket.allowChildProcess) args.push('--allow-child-process');
-  if (bucket.allowWorker) args.push('--allow-worker');
-  if (bucket.allowAddons) args.push('--allow-addons');
-  if (bucket.allowWasi) args.push('--allow-wasi');
-  if (bucket.allowInspector) args.push('--allow-inspector');
+  if (bucket.allowChildProcess) args.push("--allow-child-process");
+  if (bucket.allowWorker) args.push("--allow-worker");
+  if (bucket.allowAddons) args.push("--allow-addons");
+  if (bucket.allowWasi) args.push("--allow-wasi");
+  if (bucket.allowInspector) args.push("--allow-inspector");
 
   return args;
 }
@@ -524,7 +563,7 @@ function pushFsArgs(args, flag, value) {
     return;
   }
 
-  if (value === '*') {
+  if (value === "*") {
     args.push(`${flag}=*`);
     return;
   }
@@ -540,8 +579,8 @@ function pushFsArgs(args, flag, value) {
 }
 
 function deserializeError(raw) {
-  const error = new Error(raw?.message ?? 'Sandbox RPC error');
-  error.name = raw?.name ?? 'SandboxRpcError';
+  const error = new Error(raw?.message ?? "Sandbox RPC error");
+  error.name = raw?.name ?? "SandboxRpcError";
   if (raw?.stack) {
     error.stack = raw.stack;
   }
@@ -557,7 +596,7 @@ function deserializeError(raw) {
 function resolveSpecifier(specifier, parent, isMain) {
   try {
     const resolved = Module._resolveFilename(specifier, parent, isMain);
-    if (typeof resolved !== 'string') {
+    if (typeof resolved !== "string") {
       return null;
     }
     if (!path.isAbsolute(resolved)) {
@@ -572,7 +611,7 @@ function resolveSpecifier(specifier, parent, isMain) {
 function readManifestSafe(manifestPath) {
   try {
     const absolutePath = path.resolve(process.cwd(), manifestPath);
-    return JSON.parse(fs.readFileSync(absolutePath, 'utf8'));
+    return JSON.parse(fs.readFileSync(absolutePath, "utf8"));
   } catch {
     return {
       entriesByUrl: {},
@@ -582,19 +621,23 @@ function readManifestSafe(manifestPath) {
 }
 
 function getManifestEntry(manifest, realUrl, specifier) {
-  return manifest?.entriesByUrl?.[realUrl] ?? manifest?.entriesBySpecifier?.[specifier] ?? null;
+  return (
+    manifest?.entriesByUrl?.[realUrl] ??
+    manifest?.entriesBySpecifier?.[specifier] ??
+    null
+  );
 }
 
 function normalizeExportNames(exportNames) {
   if (!Array.isArray(exportNames) || exportNames.length === 0) {
-    return ['default'];
+    return ["default"];
   }
 
   const unique = [];
   const seen = new Set();
 
   for (const exportName of exportNames) {
-    if (typeof exportName !== 'string') {
+    if (typeof exportName !== "string") {
       continue;
     }
 
@@ -606,8 +649,8 @@ function normalizeExportNames(exportNames) {
     unique.push(exportName);
   }
 
-  if (!seen.has('default')) {
-    unique.unshift('default');
+  if (!seen.has("default")) {
+    unique.unshift("default");
   }
 
   return unique;
@@ -615,7 +658,7 @@ function normalizeExportNames(exportNames) {
 
 function loadPolicySync(policyPath) {
   const absolutePath = path.resolve(process.cwd(), policyPath);
-  const raw = fs.readFileSync(absolutePath, 'utf8');
+  const raw = fs.readFileSync(absolutePath, "utf8");
   const parsed = parseJsonc(raw);
   return normalizePolicy(parsed);
 }
@@ -634,44 +677,59 @@ function normalizePolicy(policy) {
 
   for (const [pattern, bucketName] of Object.entries(inputPackages)) {
     if (!buckets[bucketName]) {
-      throw new Error(`Policy references unknown bucket \"${bucketName}\" for pattern \"${pattern}\"`);
+      throw new Error(
+        `Policy references unknown bucket \"${bucketName}\" for pattern \"${pattern}\"`,
+      );
     }
 
-    if (pattern.endsWith('*')) {
-      packageMappings.push({ type: 'wildcard', pattern, prefix: pattern.slice(0, -1), bucket: bucketName });
+    if (pattern.endsWith("*")) {
+      packageMappings.push({
+        type: "wildcard",
+        pattern,
+        prefix: pattern.slice(0, -1),
+        bucket: bucketName,
+      });
     } else {
-      packageMappings.push({ type: 'exact', pattern, bucket: bucketName });
+      packageMappings.push({ type: "exact", pattern, bucket: bucketName });
     }
   }
 
   packageMappings.sort((a, b) => {
-    if (a.type === 'exact' && b.type !== 'exact') return -1;
-    if (a.type !== 'exact' && b.type === 'exact') return 1;
-    if (a.type === 'wildcard' && b.type === 'wildcard') {
+    if (a.type === "exact" && b.type !== "exact") return -1;
+    if (a.type !== "exact" && b.type === "exact") return 1;
+    if (a.type === "wildcard" && b.type === "wildcard") {
       return b.prefix.length - a.prefix.length;
     }
     return 0;
   });
 
-  const inputImporterRules = Array.isArray(policy?.importerRules) ? policy.importerRules : [];
+  const inputImporterRules = Array.isArray(policy?.importerRules)
+    ? policy.importerRules
+    : [];
   for (const rule of inputImporterRules) {
-    if (!rule || typeof rule !== 'object') {
+    if (!rule || typeof rule !== "object") {
       continue;
     }
 
     const bucketName = rule.bucket;
     if (!buckets[bucketName]) {
-      throw new Error(`Policy importerRules references unknown bucket "${bucketName}"`);
+      throw new Error(
+        `Policy importerRules references unknown bucket "${bucketName}"`,
+      );
     }
 
-    const importerPattern = typeof rule.importer === 'string' ? rule.importer : '*';
-    const specifierPattern = typeof rule.specifier === 'string' ? rule.specifier : '*';
+    const importerPattern =
+      typeof rule.importer === "string" ? rule.importer : "*";
+    const specifierPattern =
+      typeof rule.specifier === "string" ? rule.specifier : "*";
 
-    importerRules.push(normalizeImporterRule({
-      importerPattern,
-      specifierPattern,
-      bucket: bucketName,
-    }));
+    importerRules.push(
+      normalizeImporterRule({
+        importerPattern,
+        specifierPattern,
+        bucket: bucketName,
+      }),
+    );
   }
 
   importerRules.sort(compareImporterRules);
@@ -686,10 +744,12 @@ function normalizePolicy(policy) {
 function createPolicyMatcher(policy) {
   const exact = new Map();
   const wildcard = [];
-  const importerRules = Array.isArray(policy.importerRules) ? policy.importerRules : [];
+  const importerRules = Array.isArray(policy.importerRules)
+    ? policy.importerRules
+    : [];
 
   for (const mapping of policy.packageMappings ?? []) {
-    if (mapping.type === 'exact') {
+    if (mapping.type === "exact") {
       exact.set(mapping.pattern, mapping.bucket);
     } else {
       wildcard.push(mapping);
@@ -699,14 +759,14 @@ function createPolicyMatcher(policy) {
   wildcard.sort((a, b) => b.prefix.length - a.prefix.length);
 
   return {
-    match(specifier, parentUrl = '') {
+    match(specifier, parentUrl = "") {
       if (importerRules.length > 0) {
         for (const rule of importerRules) {
           if (!patternMatches(rule.specifierMatcher, specifier)) {
             continue;
           }
 
-          if (!patternMatches(rule.importerMatcher, parentUrl || '')) {
+          if (!patternMatches(rule.importerMatcher, parentUrl || "")) {
             continue;
           }
 
@@ -741,7 +801,7 @@ function normalizeImporterRule({ importerPattern, specifierPattern, bucket }) {
 
 function compareImporterRules(a, b) {
   if (a.specifierMatcher.type !== b.specifierMatcher.type) {
-    return a.specifierMatcher.type === 'exact' ? -1 : 1;
+    return a.specifierMatcher.type === "exact" ? -1 : 1;
   }
 
   if (a.specifierMatcher.anchorLength !== b.specifierMatcher.anchorLength) {
@@ -749,31 +809,31 @@ function compareImporterRules(a, b) {
   }
 
   if (a.importerMatcher.type !== b.importerMatcher.type) {
-    return a.importerMatcher.type === 'exact' ? -1 : 1;
+    return a.importerMatcher.type === "exact" ? -1 : 1;
   }
 
   return b.importerMatcher.anchorLength - a.importerMatcher.anchorLength;
 }
 
 function toPatternMatcher(pattern) {
-  if (pattern === '*') {
-    return { type: 'any', anchorLength: 0, anchor: '' };
+  if (pattern === "*") {
+    return { type: "any", anchorLength: 0, anchor: "" };
   }
 
-  if (pattern.endsWith('*')) {
+  if (pattern.endsWith("*")) {
     const anchor = pattern.slice(0, -1);
-    return { type: 'prefix', anchorLength: anchor.length, anchor };
+    return { type: "prefix", anchorLength: anchor.length, anchor };
   }
 
-  return { type: 'exact', anchorLength: pattern.length, anchor: pattern };
+  return { type: "exact", anchorLength: pattern.length, anchor: pattern };
 }
 
 function patternMatches(matcher, value) {
-  if (matcher.type === 'any') {
+  if (matcher.type === "any") {
     return true;
   }
 
-  if (matcher.type === 'prefix') {
+  if (matcher.type === "prefix") {
     return value.startsWith(matcher.anchor);
   }
 
@@ -803,7 +863,7 @@ function normalizeAllowNet(value) {
 }
 
 function normalizePathList(value) {
-  if (value === '*' || value === false) {
+  if (value === "*" || value === false) {
     return value;
   }
 
@@ -815,7 +875,7 @@ function normalizePathList(value) {
 }
 
 function normalizeEnv(value) {
-  if (!value || typeof value !== 'object') {
+  if (!value || typeof value !== "object") {
     return {};
   }
 
@@ -832,12 +892,12 @@ function parseJsonc(input) {
 
 function stripJsonComments(input) {
   return input
-    .replace(/\/\*[\s\S]*?\*\//g, '')
-    .replace(/(^|[^:\\])\/\/.*$/gm, '$1');
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .replace(/(^|[^:\\])\/\/.*$/gm, "$1");
 }
 
 function stripTrailingCommas(input) {
-  return input.replace(/,\s*([}\]])/g, '$1');
+  return input.replace(/,\s*([}\]])/g, "$1");
 }
 
 let cleanupHooksRegistered = false;
@@ -853,17 +913,17 @@ function registerCleanupHooks(runtimePool) {
     runtimePool.close();
   };
 
-  process.once('exit', closePool);
-  process.once('SIGINT', () => {
+  process.once("exit", closePool);
+  process.once("SIGINT", () => {
     closePool();
     process.exit(130);
   });
-  process.once('SIGTERM', () => {
+  process.once("SIGTERM", () => {
     closePool();
     process.exit(143);
   });
 }
 
-if (process.env.SANDBOXIFY_DISABLE !== '1') {
+if (process.env.SANDBOXIFY_DISABLE !== "1") {
   installCjsRequireHook();
 }
