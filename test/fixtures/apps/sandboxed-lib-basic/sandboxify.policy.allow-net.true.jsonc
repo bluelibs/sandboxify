@@ -2,7 +2,7 @@
   "buckets": {
     "cpu_only": {
       "allowNet": true,
-      "allowFsRead": ["./node_modules"],
+      "allowFsRead": ["./node_modules", "./local-libs"],
       "allowFsWrite": [],
       "allowChildProcess": false,
       "allowWorker": false,
@@ -34,6 +34,7 @@
   "packages": {
     "sandboxed-lib": "cpu_only",
     "sideeffect-lib": "cpu_only",
+    "./local-libs/file-sandboxed-lib.mjs": "cpu_only",
   },
   "importerRules": [
     {

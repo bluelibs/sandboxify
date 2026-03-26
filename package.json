@@ -21,6 +21,7 @@
   },
   "scripts": {
     "test": "node --test --test-timeout=30000 test/*.test.js",
+    "coverage": "node --experimental-test-coverage --test --test-timeout=30000 '--test-coverage-include=src/**/*.js' test/*.test.js",
     "build-manifest": "node ./src/cli/index.js build-manifest",
     "doctor": "node ./src/cli/index.js doctor",
     "bench": "npm run bench:smoke",

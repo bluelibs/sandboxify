@@ -285,6 +285,38 @@ test(
 );
 
 test(
+  "integration: local file dependency can be sandboxed and used",
+  { concurrency: false },
+  async () => {
+    const fixture = createTempProjectFromFixture("sandboxed-lib-basic");
+    try {
+      materializePolicy(fixture.projectDir, { allowNet: false });
+
+      const manifestResult = await buildManifest(fixture.projectDir);
+      assert.equal(
+        manifestResult.code,
+        0,
+        `build-manifest failed (timedOut=${manifestResult.timedOut})\nstdout:\n${manifestResult.stdout}\nstderr:\n${manifestResult.stderr}`,
+      );
+
+      const result = await runWithLoader(
+        fixture.projectDir,
+        "file-dependency-check.mjs",
+      );
+      assert.equal(
+        result.code,
+        0,
+        `app failed (timedOut=${result.timedOut})\nstdout:\n${result.stdout}\nstderr:\n${result.stderr}`,
+      );
+      assert.match(stripAnsi(result.stdout), /FILE_DEP_RESULT\s+12/);
+      assert.match(stripAnsi(result.stdout), /FILE_DEP_CHILD_ERR\s+/);
+    } finally {
+      fixture.cleanup();
+    }
+  },
+);
+
+test(
   "integration: importerRules route same dependency by importer path",
   { concurrency: false },
   async () => {
