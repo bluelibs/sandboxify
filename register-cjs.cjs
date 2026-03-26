@@ -694,8 +694,22 @@ function decodeSyncWireValue(value) {
 
 function buildPermissionArgs(bucket, hostEntry) {
   const args = ["--permission"];
-  const hostDir = path.dirname(hostEntry);
-  args.push(`--allow-fs-read=${hostDir}`);
+  const internalSrcDir = path.resolve(path.dirname(hostEntry), "..");
+  args.push(`--allow-fs-read=${internalSrcDir}`);
+
+  const policyPath = resolveConfiguredPath(
+    process.env.SANDBOXIFY_POLICY_PATH ?? "./sandboxify.policy.jsonc",
+  );
+  if (policyPath) {
+    args.push(`--allow-fs-read=${policyPath}`);
+  }
+
+  const manifestPath = resolveConfiguredPath(
+    process.env.SANDBOXIFY_MANIFEST_PATH ?? "./.sandboxify/exports.manifest.json",
+  );
+  if (manifestPath) {
+    args.push(`--allow-fs-read=${manifestPath}`);
+  }
 
   pushFsArgs(args, "--allow-fs-read", bucket.allowFsRead);
   pushFsArgs(args, "--allow-fs-write", bucket.allowFsWrite);
@@ -715,6 +729,14 @@ function buildPermissionArgs(bucket, hostEntry) {
   if (bucket.allowInspector) args.push("--allow-inspector");
 
   return args;
+}
+
+function resolveConfiguredPath(value) {
+  if (typeof value !== "string" || value.length === 0) {
+    return null;
+  }
+
+  return path.resolve(process.cwd(), value);
 }
 
 function pushFsArgs(args, flag, value) {

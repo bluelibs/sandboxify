@@ -90,6 +90,13 @@ test("cli doctor reports ok for a valid policy and manifest", async () => {
     assert.equal(result.code, 0);
     assert.match(result.stdout, /doctor report/);
     assert.match(result.stdout, /manifest: \.\/\.sandboxify\/exports\.manifest\.json \(present\)/);
+    assert.match(result.stdout, /package ownership: canonical from packages/);
+    assert.match(result.stdout, /same-bucket imports: stay native inside the sandbox host/);
+    assert.match(
+      result.stdout,
+      /cross-bucket imports: bridge over RPC to the target bucket \(requires allowChildProcess today\)/,
+    );
+    assert.match(result.stdout, /cross-bucket cycles: unsupported/);
     assert.match(result.stdout, /status: ok/);
   } finally {
     fs.rmSync(tmpDir, { recursive: true, force: true });

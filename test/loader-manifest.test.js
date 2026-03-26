@@ -241,6 +241,81 @@ test(
 );
 
 test(
+  "createSandboxHooks uses SANDBOXIFY_MANIFEST_PATH when manifestPath is omitted",
+  { concurrency: false },
+  () => {
+    const tmpDir = createTmpDir("sandboxify-loader-manifest-env-");
+    const previousManifestPath = process.env.SANDBOXIFY_MANIFEST_PATH;
+
+    try {
+      writeJson(path.join(tmpDir, "sandboxify.policy.jsonc"), {
+        buckets: {
+          cpu_only: {
+            allowNet: false,
+            allowFsRead: ["./"],
+            allowFsWrite: [],
+            allowChildProcess: false,
+            allowWorker: false,
+            allowAddons: false,
+          },
+        },
+        packages: {
+          "./dep.mjs": "cpu_only",
+        },
+      });
+
+      const depPath = path.join(tmpDir, "dep.mjs");
+      const depUrl = pathToFileURL(depPath).href;
+      writeFile(depPath, "export default 1;\n");
+      writeJson(path.join(tmpDir, "custom-manifest.json"), {
+        version: 1,
+        entriesByUrl: {
+          [depUrl]: {
+            specifier: "./dep.mjs",
+            exportNames: ["named", "default"],
+          },
+        },
+        entriesBySpecifier: {
+          "./dep.mjs": {
+            realUrl: depUrl,
+            exportNames: ["named", "default"],
+          },
+        },
+      });
+
+      process.env.SANDBOXIFY_MANIFEST_PATH = path.join(
+        tmpDir,
+        "custom-manifest.json",
+      );
+
+      withCwd(tmpDir, () => {
+        const hooks = createSandboxHooks({
+          policyPath: "./sandboxify.policy.jsonc",
+        });
+
+        const resolved = hooks.resolve(
+          "./dep.mjs",
+          { parentURL: "file:///app/index.mjs" },
+          () => ({ url: depUrl }),
+        );
+        const loaded = hooks.load(resolved.url, {}, () => {
+          throw new Error("unexpected nextLoad");
+        });
+
+        assert.match(loaded.source, /export const named = __sandboxifyModule\["named"\];/);
+      });
+    } finally {
+      if (previousManifestPath == null) {
+        delete process.env.SANDBOXIFY_MANIFEST_PATH;
+      } else {
+        process.env.SANDBOXIFY_MANIFEST_PATH = previousManifestPath;
+      }
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    }
+  },
+);
+
+test(
   "createSandboxHooks sandboxes local files by resolved URL when the raw specifier spelling differs",
   { concurrency: false },
   () => {
@@ -316,23 +391,15 @@ test(
 );
 
 test(
-  "createSandboxHooks reuses manifest export metadata across buckets for the same module",
+  "createSandboxHooks keeps same-bucket imports native when localBucket matches",
   { concurrency: false },
   () => {
-    const tmpDir = createTmpDir("sandboxify-loader-cache-");
+    const tmpDir = createTmpDir("sandboxify-loader-local-bucket-");
 
     try {
       writeJson(path.join(tmpDir, "sandboxify.policy.jsonc"), {
         buckets: {
-          open: {
-            allowNet: false,
-            allowFsRead: ["./"],
-            allowFsWrite: [],
-            allowChildProcess: false,
-            allowWorker: false,
-            allowAddons: false,
-          },
-          restricted: {
+          cpu_only: {
             allowNet: false,
             allowFsRead: ["./"],
             allowFsWrite: [],
@@ -342,63 +409,27 @@ test(
           },
         },
         packages: {
-          "./dep.mjs": "open",
+          "./dep.mjs": "cpu_only",
         },
-        importerRules: [
-          {
-            importer: "file:///app/restricted/*",
-            specifier: "./dep.mjs",
-            bucket: "restricted",
-          },
-        ],
       });
 
       const depPath = path.join(tmpDir, "dep.mjs");
-      writeFile(depPath, "export const named = true;\n");
-      writeJson(path.join(tmpDir, "manifest.json"), {
-        version: 1,
-        entriesByUrl: {
-          [pathToFileURL(depPath).href]: {
-            specifier: "./dep.mjs",
-            exportNames: ["named", "default"],
-          },
-        },
-        entriesBySpecifier: {
-          "./dep.mjs": {
-            realUrl: pathToFileURL(depPath).href,
-            exportNames: ["named", "default"],
-          },
-        },
-      });
+      const depUrl = pathToFileURL(depPath).href;
+      writeFile(depPath, "export const named = 1;\n");
 
       withCwd(tmpDir, () => {
         const hooks = createSandboxHooks({
           policyPath: "./sandboxify.policy.jsonc",
-          manifestPath: "./manifest.json",
+          localBucket: "cpu_only",
         });
 
-        const openResolved = hooks.resolve(
+        const resolved = hooks.resolve(
           "./dep.mjs",
-          { parentURL: "file:///app/open/main.mjs" },
-          () => ({ url: pathToFileURL(depPath).href }),
-        );
-        const restrictedResolved = hooks.resolve(
-          "./dep.mjs",
-          { parentURL: "file:///app/restricted/main.mjs" },
-          () => ({ url: pathToFileURL(depPath).href }),
+          { parentURL: "file:///app/index.mjs" },
+          () => ({ url: depUrl }),
         );
 
-        assert.notEqual(openResolved.url, restrictedResolved.url);
-
-        const openLoad = hooks.load(openResolved.url, {}, () => {
-          throw new Error("unexpected nextLoad");
-        });
-        const restrictedLoad = hooks.load(restrictedResolved.url, {}, () => {
-          throw new Error("unexpected nextLoad");
-        });
-
-        assert.match(openLoad.source, /export const named = __sandboxifyModule\["named"\];/);
-        assert.match(restrictedLoad.source, /export const named = __sandboxifyModule\["named"\];/);
+        assert.equal(resolved.url, depUrl);
       });
     } finally {
       fs.rmSync(tmpDir, { recursive: true, force: true });

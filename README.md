@@ -279,8 +279,9 @@ Your policy has two main parts:
 
 - `buckets`: what permissions a sandbox gets
 - `packages`: which dependency goes into which bucket
-  For package names this matches the raw import specifier.
+  For package names this matches the package name and its subpaths.
   For local file specifiers it matches the raw specifier first, then the resolved file URL as a fallback.
+  `packages` is also the canonical ownership map: one dependency belongs to one bucket.
 
 Example:
 
@@ -320,13 +321,18 @@ Example:
 
 - include `./node_modules` in `allowFsRead` for sandboxed packages
 - include local directories too if you sandbox local file dependencies
+- bare package entries in `packages` also cover package subpaths like `pkg/sub/path.js`
 - local file entries in `packages` use raw specifier matching first, then resolved-file fallback
+- packages in the same bucket import each other natively inside that sandbox host
+- imports from one bucket into another bucket bridge over RPC to the target bucket
+- cross-bucket bridging currently needs `allowChildProcess: true` on the bucket that initiates the bridge
+- cross-bucket circular import chains are not supported
 - start restrictive and open only what a dependency really needs
 - JSONC is supported so you can leave comments in the policy
 
 ## Advanced Policy: Importer Rules
 
-Sometimes the same dependency should get different permissions depending on who imported it.
+Use `importerRules` when you need to sandbox something that is not canonically owned by `packages`, or when you want importer-based handling for local-file-only cases.
 
 That is what `importerRules` is for.
 
@@ -351,12 +357,12 @@ That is what `importerRules` is for.
     }
   },
   "packages": {
-    "some-http-lib": "restricted_net"
+    "other-http-lib": "restricted_net"
   },
   "importerRules": [
     {
       "importer": "file:///app/src/open/*",
-      "specifier": "some-http-lib",
+      "specifier": "some-special-case-lib",
       "bucket": "open_net"
     }
   ]
@@ -365,10 +371,12 @@ That is what `importerRules` is for.
 
 Rule precedence:
 
+- `packages` is authoritative for canonical bucket ownership
 - more specific `specifier` wins
 - then more specific `importer` wins
-- fallback goes to `packages`
+- fallback goes to no match if `packages` did not already claim the specifier
 - raw specifier matches win over resolved-file fallback matches
+- conflicting `importerRules` that try to remap a `packages` entry are rejected
 
 ## ESM vs CJS
 
@@ -472,7 +480,7 @@ Useful environment variables:
 | `SANDBOXIFY_CJS_SYNC_EXPERIMENTAL=1` | Enable sync-ish CJS mode. |
 | `SANDBOXIFY_IPC_BLOB_THRESHOLD_BYTES=<n>` | Offload large `Buffer` and `Uint8Array` arguments to temp files before RPC. |
 | `SANDBOXIFY_POLICY_PATH=<path>` | Override the policy path. |
-| `SANDBOXIFY_MANIFEST_PATH=<path>` | Override the manifest path. |
+| `SANDBOXIFY_MANIFEST_PATH=<path>` | Override the manifest path for both the app loader and nested sandbox-to-sandbox bridging. |
 
 Examples:
 
@@ -488,6 +496,96 @@ If something feels off, the most common fixes are:
 - confirm the import actually matches your policy
 - confirm the sandbox has filesystem access to the dependency path
 - temporarily run with `SANDBOXIFY_DISABLE=1` to separate app issues from sandbox issues
+
+## Testing
+
+`sandboxify` usually fits best in integration-style tests, not every single unit test.
+
+Practical rule of thumb:
+
+- keep fast unit tests mostly unsandboxed
+- use sandboxed integration tests for the real permission and RPC behavior
+- if you use TypeScript, compile first and test the emitted JavaScript
+
+### Unit tests
+
+For ordinary unit tests, you often do not need the sandbox at all.
+
+That keeps the tests simpler and avoids process-boundary overhead when you are only checking app logic.
+
+Options:
+
+- do not preload `sandboxify` in those tests
+- or set `SANDBOXIFY_DISABLE=1`
+
+Example:
+
+```bash
+SANDBOXIFY_DISABLE=1 node --test
+```
+
+### Integration tests
+
+For tests that should verify the real sandbox behavior, use the same flow as production:
+
+1. build your app if needed
+2. build or refresh the manifest
+3. run the test target with the loader or CJS register enabled
+
+ESM example:
+
+```bash
+npx sandboxify build-manifest
+node --import ./register.mjs ./dist/integration/sanitize-html.test.js
+```
+
+CJS example:
+
+```bash
+npx sandboxify build-manifest
+node -r sandboxify/register-cjs ./dist/integration/sanitize-html.test.cjs
+```
+
+Those tests exercise the full path:
+
+- import interception
+- generated stubs
+- sandbox host startup
+- permission enforcement
+- RPC calls across the process boundary
+
+### TypeScript test flow
+
+If your app or tests are written in TypeScript, the recommended flow is still:
+
+1. compile TypeScript to JavaScript
+2. build the manifest against the emitted files
+3. run tests against the emitted files
+
+Example scripts:
+
+```json
+{
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "npm run build && node --test ./dist/**/*.test.js",
+    "test:sandbox": "npm run build && sandboxify build-manifest && node --import ./register.mjs ./dist/integration/app.test.js"
+  }
+}
+```
+
+If you sandbox local files, make sure your policy matches the emitted runtime files like `./dist/pdf-service.js`, not the original source files like `./src/pdf-service.ts`.
+
+### When to rebuild the manifest in tests
+
+Rebuild the manifest when:
+
+- you changed the build output
+- you changed which packages are sandboxed
+- you changed a sandboxed package version
+- a sandboxed module's exports changed
+
+If a sandboxed test suddenly fails in a strange way, rebuilding the manifest is one of the highest-leverage first checks.
 
 ## Performance
 

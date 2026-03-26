@@ -34,14 +34,20 @@ export function normalizePolicy(policy, sourcePath = "") {
         type: "wildcard",
         pattern,
         prefix: pattern.slice(0, -1),
+        matcher: toPatternMatcher(pattern),
         resolvedPattern: resolvePolicySpecifierPattern(pattern),
+        resolvedMatcher: toResolvedPatternMatcher(pattern),
         bucket: bucketName,
       });
     } else {
       packageMappings.push({
         type: "exact",
         pattern,
+        matcher: toPatternMatcher(pattern),
+        packageSubpathPrefix: getPackageSubpathPrefix(pattern),
+        packageSubpathMatcher: toPackageSubpathMatcher(pattern),
         resolvedPattern: resolvePolicySpecifierPattern(pattern),
+        resolvedMatcher: toResolvedPatternMatcher(pattern),
         bucket: bucketName,
       });
     }
@@ -85,6 +91,7 @@ export function normalizePolicy(policy, sourcePath = "") {
     );
   }
 
+  assertCanonicalPackageOwnership(packageMappings, importerRules, sourcePath);
   importerRules.sort(compareImporterRules);
 
   return {
@@ -97,6 +104,7 @@ export function normalizePolicy(policy, sourcePath = "") {
 
 export function createPolicyMatcher(policy) {
   const rawExact = new Map();
+  const rawExactPackageSubpaths = [];
   const rawWildcard = [];
   const resolvedExact = new Map();
   const resolvedWildcard = [];
@@ -106,6 +114,9 @@ export function createPolicyMatcher(policy) {
   for (const mapping of policy.packageMappings ?? []) {
     if (mapping.type === "exact") {
       rawExact.set(mapping.pattern, mapping.bucket);
+      if (mapping.packageSubpathPrefix) {
+        rawExactPackageSubpaths.push(mapping);
+      }
       if (typeof mapping.resolvedPattern === "string") {
         resolvedExact.set(mapping.resolvedPattern, mapping.bucket);
       }
@@ -130,12 +141,16 @@ export function createPolicyMatcher(policy) {
     }
   }
 
+  rawExactPackageSubpaths.sort(
+    (a, b) => b.packageSubpathPrefix.length - a.packageSubpathPrefix.length,
+  );
   rawWildcard.sort((a, b) => b.prefix.length - a.prefix.length);
   resolvedWildcard.sort((a, b) => b.prefix.length - a.prefix.length);
   resolvedImporterRules.sort(compareResolvedImporterRules);
 
   const matchRaw = createMatchFn({
     exact: rawExact,
+    exactPackageSubpaths: rawExactPackageSubpaths,
     wildcard: rawWildcard,
     importerRules: rawImporterRules,
     cache: new Map(),
@@ -143,6 +158,7 @@ export function createPolicyMatcher(policy) {
   });
   const matchResolved = createMatchFn({
     exact: resolvedExact,
+    exactPackageSubpaths: [],
     wildcard: resolvedWildcard,
     importerRules: resolvedImporterRules,
     cache: new Map(),
@@ -173,6 +189,7 @@ export function createPolicyMatcher(policy) {
 
 function createMatchFn({
   exact,
+  exactPackageSubpaths,
   wildcard,
   importerRules,
   cache,
@@ -185,6 +202,28 @@ function createMatchFn({
     }
 
     let bucket = null;
+
+    if (exact.has(specifier)) {
+      bucket = exact.get(specifier);
+      cache.set(cacheKey, bucket);
+      return bucket;
+    }
+
+    for (const mapping of exactPackageSubpaths) {
+      if (specifier.startsWith(mapping.packageSubpathPrefix)) {
+        bucket = mapping.bucket;
+        cache.set(cacheKey, bucket);
+        return bucket;
+      }
+    }
+
+    for (const mapping of wildcard) {
+      if (specifier.startsWith(mapping.prefix)) {
+        bucket = mapping.bucket;
+        cache.set(cacheKey, bucket);
+        return bucket;
+      }
+    }
 
     if (importerRules.length > 0) {
       for (const rule of importerRules) {
@@ -202,23 +241,33 @@ function createMatchFn({
       }
     }
 
-    if (exact.has(specifier)) {
-      bucket = exact.get(specifier);
-      cache.set(cacheKey, bucket);
-      return bucket;
-    }
-
-    for (const mapping of wildcard) {
-      if (specifier.startsWith(mapping.prefix)) {
-        bucket = mapping.bucket;
-        cache.set(cacheKey, bucket);
-        return bucket;
-      }
-    }
-
     cache.set(cacheKey, null);
     return null;
   };
+}
+
+function assertCanonicalPackageOwnership(
+  packageMappings,
+  importerRules,
+  sourcePath = "",
+) {
+  for (const rule of importerRules) {
+    for (const mapping of packageMappings) {
+      if (rule.bucket === mapping.bucket) {
+        continue;
+      }
+
+      if (
+        patternsOverlap(rule.specifierMatcher, mapping.matcher) ||
+        patternsOverlap(rule.specifierMatcher, mapping.packageSubpathMatcher) ||
+        patternsOverlap(rule.resolvedSpecifierMatcher, mapping.resolvedMatcher)
+      ) {
+        throw new Error(
+          `Policy importerRules cannot remap canonical package ownership for specifier "${rule.specifierPattern}" to bucket "${rule.bucket}" because it overlaps package mapping "${mapping.pattern}" owned by "${mapping.bucket}" (${sourcePath || "unknown source"})`,
+        );
+      }
+    }
+  }
 }
 
 function normalizeImporterRule({ importerPattern, specifierPattern, bucket }) {
@@ -324,6 +373,32 @@ function patternMatches(matcher, value) {
   return value === matcher.anchor;
 }
 
+function patternsOverlap(left, right) {
+  if (!left || !right) {
+    return false;
+  }
+
+  if (left.type === "any" || right.type === "any") {
+    return true;
+  }
+
+  if (left.type === "exact" && right.type === "exact") {
+    return left.anchor === right.anchor;
+  }
+
+  if (left.type === "exact" && right.type === "prefix") {
+    return left.anchor.startsWith(right.anchor);
+  }
+
+  if (left.type === "prefix" && right.type === "exact") {
+    return right.anchor.startsWith(left.anchor);
+  }
+
+  return (
+    left.anchor.startsWith(right.anchor) || right.anchor.startsWith(left.anchor)
+  );
+}
+
 function resolvePolicySpecifierPattern(pattern) {
   if (!isLocalLikeSpecifier(pattern)) {
     return null;
@@ -353,6 +428,46 @@ function isLocalLikeSpecifier(specifier) {
     specifier.startsWith("file://") ||
     path.isAbsolute(specifier)
   );
+}
+
+function getPackageSubpathPrefix(pattern) {
+  if (!isBarePackageRootSpecifier(pattern)) {
+    return null;
+  }
+
+  return `${pattern}/`;
+}
+
+function toPackageSubpathMatcher(pattern) {
+  const prefix = getPackageSubpathPrefix(pattern);
+  if (!prefix) {
+    return null;
+  }
+
+  return {
+    type: "prefix",
+    anchorLength: prefix.length,
+    anchor: prefix,
+  };
+}
+
+function isBarePackageRootSpecifier(specifier) {
+  if (
+    specifier === "*" ||
+    specifier.includes("*") ||
+    isLocalLikeSpecifier(specifier) ||
+    specifier.startsWith("node:") ||
+    specifier.startsWith("file:")
+  ) {
+    return false;
+  }
+
+  if (specifier.startsWith("@")) {
+    const segments = specifier.split("/");
+    return segments.length === 2 && segments[0].length > 1 && segments[1].length > 0;
+  }
+
+  return !specifier.includes("/");
 }
 
 function resolvePolicySpecifierValue(value) {

@@ -36,16 +36,4 @@
     "sideeffect-lib": "cpu_only",
     "./local-libs/file-sandboxed-lib.mjs": "cpu_only",
   },
-  "importerRules": [
-    {
-      "importer": "__PROJECT_DIR_URL__/restricted*",
-      "specifier": "sandboxed-lib",
-      "bucket": "restricted_net",
-    },
-    {
-      "importer": "__PROJECT_DIR_URL__/open*",
-      "specifier": "sandboxed-lib",
-      "bucket": "open_net",
-    },
-  ],
 }

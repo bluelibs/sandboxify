@@ -12,7 +12,7 @@ test("policy matcher prefers exact over wildcard and longest wildcard prefix", (
       longWildcardBucket: {},
     },
     packages: {
-      pkg: "exactBucket",
+      "pkg/exact": "exactBucket",
       "pkg/*": "wildcardBucket",
       "pkg/sub/*": "longWildcardBucket",
     },
@@ -20,10 +20,31 @@ test("policy matcher prefers exact over wildcard and longest wildcard prefix", (
 
   const matcher = createPolicyMatcher(policy);
 
-  assert.equal(matcher.match("pkg"), "exactBucket");
+  assert.equal(matcher.match("pkg/exact"), "exactBucket");
   assert.equal(matcher.match("pkg/any"), "wildcardBucket");
   assert.equal(matcher.match("pkg/sub/path"), "longWildcardBucket");
   assert.equal(matcher.match("other"), null);
+});
+
+test("policy matcher treats bare package ownership as covering package subpaths", () => {
+  const policy = normalizePolicy({
+    buckets: {
+      exactBucket: {},
+      otherBucket: {},
+    },
+    packages: {
+      pdfmake: "exactBucket",
+      "@scope/lib": "otherBucket",
+    },
+  });
+
+  const matcher = createPolicyMatcher(policy);
+
+  assert.equal(matcher.match("pdfmake"), "exactBucket");
+  assert.equal(matcher.match("pdfmake/js/index.js"), "exactBucket");
+  assert.equal(matcher.match("@scope/lib"), "otherBucket");
+  assert.equal(matcher.match("@scope/lib/internal/x.js"), "otherBucket");
+  assert.equal(matcher.match("pdfmakex/js/index.js"), null);
 });
 
 test("policy matcher falls back to the resolved file URL for local exact entries", () => {
@@ -67,10 +88,13 @@ test("policy matcher supports importerRules with deterministic precedence", () =
       restrictedBucket: {},
       narrowBucket: {},
     },
-    packages: {
-      "sandboxed-lib": "defaultBucket",
-    },
+    packages: {},
     importerRules: [
+      {
+        importer: "*",
+        specifier: "sandboxed-lib",
+        bucket: "defaultBucket",
+      },
       {
         importer: "file:///app/src/restricted/*",
         specifier: "sandboxed-lib",
@@ -100,6 +124,52 @@ test("policy matcher supports importerRules with deterministic precedence", () =
   assert.equal(
     matcher.match("sandboxed-lib", "file:///app/src/open/module.mjs"),
     "defaultBucket",
+  );
+});
+
+test("policy normalization rejects importerRules that remap canonical package ownership", () => {
+  assert.throws(
+    () =>
+      normalizePolicy({
+        buckets: {
+          canonicalBucket: {},
+          remappedBucket: {},
+        },
+        packages: {
+          "sandboxed-lib": "canonicalBucket",
+        },
+        importerRules: [
+          {
+            importer: "file:///app/*",
+            specifier: "sandboxed-lib",
+            bucket: "remappedBucket",
+          },
+        ],
+      }),
+    /cannot remap canonical package ownership/,
+  );
+});
+
+test("policy normalization rejects importerRules that remap a canonical package subpath", () => {
+  assert.throws(
+    () =>
+      normalizePolicy({
+        buckets: {
+          canonicalBucket: {},
+          remappedBucket: {},
+        },
+        packages: {
+          pdfmake: "canonicalBucket",
+        },
+        importerRules: [
+          {
+            importer: "file:///app/*",
+            specifier: "pdfmake/js/index.js",
+            bucket: "remappedBucket",
+          },
+        ],
+      }),
+    /cannot remap canonical package ownership/,
   );
 });
 

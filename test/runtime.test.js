@@ -287,6 +287,38 @@ test(
 );
 
 test(
+  "RuntimePool rejects cross-bucket circular load traces before RPC",
+  { concurrency: false },
+  async () => {
+    const pool = new RuntimePool({
+      buckets: {
+        alpha: {},
+        beta: {},
+      },
+    });
+
+    pool.getClient = () => {
+      throw new Error("should not request a client when cycle detection trips");
+    };
+
+    try {
+      await assert.rejects(
+        pool.getRemoteModule({
+          bucket: "alpha",
+          specifier: "pkg-a",
+          realUrl: "file:///pkg-a/index.mjs",
+          exportNames: ["default"],
+          loadTrace: ["alpha", "beta"],
+        }),
+        /Cross-bucket circular import detected: alpha -> beta -> alpha/,
+      );
+    } finally {
+      pool.close();
+    }
+  },
+);
+
+test(
   "runtime index caches the pool, resets it, and handles cleanup signals",
   { concurrency: false },
   async (t) => {
@@ -341,6 +373,7 @@ test(
           specifier: "fixture",
           realUrl: "file:///fixture.mjs",
           exportNames: ["default"],
+          loadTrace: [],
         },
       );
 
@@ -395,6 +428,25 @@ test(
 
     const restoreThreshold = setEnv("SANDBOXIFY_IPC_BLOB_THRESHOLD_BYTES", "1");
     const restoreDebug = setEnv("SANDBOXIFY_DEBUG", "1");
+    const restorePolicyPath = setEnv(
+      "SANDBOXIFY_POLICY_PATH",
+      path.join(tmpDir, "sandboxify.policy.jsonc"),
+    );
+    const restoreManifestPath = setEnv(
+      "SANDBOXIFY_MANIFEST_PATH",
+      path.join(tmpDir, "exports.manifest.json"),
+    );
+    writeJson(path.join(tmpDir, "sandboxify.policy.jsonc"), {
+      buckets: {
+        rpc_coverage: {},
+      },
+      packages: {},
+    });
+    writeJson(path.join(tmpDir, "exports.manifest.json"), {
+      version: 1,
+      entriesByUrl: {},
+      entriesBySpecifier: {},
+    });
     const debugLines = [];
     t.mock.method(console, "error", (line) => {
       debugLines.push(String(line));
@@ -635,6 +687,8 @@ test(
     } finally {
       restoreThreshold();
       restoreDebug();
+      restorePolicyPath();
+      restoreManifestPath();
 
       for (const maybeClient of [
         client,

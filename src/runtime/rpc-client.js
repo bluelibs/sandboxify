@@ -4,6 +4,10 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import {
+  CLIENT_REFERENCE_TAG,
+  getRemoteReference,
+} from "./reference.js";
 
 const HOST_ENTRY = fileURLToPath(new URL("../host/index.js", import.meta.url));
 const NODE_MAJOR = Number.parseInt(
@@ -16,8 +20,13 @@ export class RpcClient {
     this.bucketName = bucketName;
     this.bucketPolicy = bucketPolicy;
     this.nextId = 1;
+    this.nextLocalHandleId = 1;
     this.pending = new Map();
+    this.localHandles = new Map();
+    this.localHandleIds = new WeakMap();
+    this.remoteHandleCache = new Map();
     this.exited = false;
+    this.exitReason = null;
     this.isRefed = true;
     this.blobStore = createBlobStore(bucketName);
     this.proc = spawnSandboxHost(bucketName, bucketPolicy, this.blobStore);
@@ -26,6 +35,7 @@ export class RpcClient {
     this.proc.on("message", (msg) => this.onMessage(msg));
     this.proc.on("error", (error) => {
       this.exited = true;
+      this.exitReason = error;
       for (const [, pending] of this.pending) {
         pending.reject(error);
       }
@@ -36,6 +46,7 @@ export class RpcClient {
       const reason = new Error(
         `Sandbox process exited for bucket ${bucketName} (code=${code}, signal=${signal})`,
       );
+      this.exitReason = reason;
       for (const [, pending] of this.pending) {
         pending.reject(reason);
       }
@@ -65,19 +76,19 @@ export class RpcClient {
     } catch {}
 
     cleanupBlobStore(this.blobStore);
+    this.localHandles.clear();
+    this.remoteHandleCache.clear();
   }
 
-  request(op, payload) {
+  async request(op, payload) {
     if (this.exited) {
-      return Promise.reject(
-        new Error(
-          `Sandbox process is not available for bucket ${this.bucketName}`,
-        ),
+      throw new Error(
+        `Sandbox process is not available for bucket ${this.bucketName}`,
       );
     }
 
+    const prepared = await preparePayload(this, op, payload, this.blobStore);
     const id = this.nextId++;
-    const prepared = preparePayload(op, payload, this.blobStore);
     const message = { t: "req", id, op, p: prepared.payload };
 
     return new Promise((resolve, reject) => {
@@ -95,14 +106,23 @@ export class RpcClient {
             safeUnlink(filePath);
           }
           this.syncRefState();
-          reject(error);
+          reject(normalizeRequestError(this, error));
         }
       });
     });
   }
 
   onMessage(message) {
-    if (!message || message.t !== "res") {
+    if (!message || typeof message !== "object") {
+      return;
+    }
+
+    if (message.t === "req") {
+      this.onRequest(message);
+      return;
+    }
+
+    if (message.t !== "res") {
       return;
     }
 
@@ -125,6 +145,76 @@ export class RpcClient {
     pending.reject(deserializeError(message.e));
   }
 
+  onRequest(message) {
+    const id = message.id;
+    if (!Number.isInteger(id)) {
+      return;
+    }
+
+    try {
+      const value = this.dispatchLocal(message.op, message.p ?? {});
+      if (isThenable(value)) {
+        value.then(
+          (resolvedValue) => {
+            this.sendResponse(id, true, resolvedValue);
+          },
+          (error) => {
+            this.sendResponse(id, false, serializeError(error));
+          },
+        );
+        return;
+      }
+
+      this.sendResponse(id, true, value);
+    } catch (error) {
+      this.sendResponse(id, false, serializeError(error));
+    }
+  }
+
+  dispatchLocal(op, payload) {
+    if (op === "clientHandleCall") {
+      return this.callLocalHandle(payload);
+    }
+
+    throw new Error(`Unknown sandbox callback operation: ${op}`);
+  }
+
+  async callLocalHandle({ handleId, args }) {
+    const target = this.localHandles.get(handleId);
+    if (typeof target !== "function") {
+      throw new Error(`Client handle is not callable: ${handleId}`);
+    }
+
+    return {
+      result: await target(...(Array.isArray(args) ? args : [])),
+    };
+  }
+
+  registerLocalHandle(value) {
+    if (value == null || typeof value !== "function") {
+      return null;
+    }
+
+    if (this.localHandleIds.has(value)) {
+      return this.localHandleIds.get(value);
+    }
+
+    const handleId = this.nextLocalHandleId++;
+    this.localHandleIds.set(value, handleId);
+    this.localHandles.set(handleId, value);
+    return handleId;
+  }
+
+  sendResponse(id, ok, value) {
+    try {
+      this.proc.send(
+        ok
+          ? { t: "res", id, ok: true, v: value }
+          : { t: "res", id, ok: false, e: value },
+      );
+    } catch {}
+  }
+
   syncRefState() {
     const shouldBeRefed = this.pending.size > 0;
     if (shouldBeRefed === this.isRefed) {
@@ -142,6 +232,14 @@ export class RpcClient {
     this.proc.unref();
     this.proc.channel?.unref?.();
   }
+}
+
+function isThenable(value) {
+  return (
+    value != null &&
+    (typeof value === "object" || typeof value === "function") &&
+    typeof value.then === "function"
+  );
 }
 
 function spawnSandboxHost(bucketName, bucketPolicy, blobStore) {
@@ -164,11 +262,29 @@ function spawnSandboxHost(bucketName, bucketPolicy, blobStore) {
 
 function buildPermissionArgs(bucket, blobReadDir) {
   const args = ["--permission"];
-  const hostDir = path.dirname(HOST_ENTRY);
-  args.push(`--allow-fs-read=${hostDir}`);
+  const internalSrcDir = path.resolve(path.dirname(HOST_ENTRY), "..");
+  const blobRootDir = path.join(os.tmpdir(), "sandboxify-ipc");
+  args.push(`--allow-fs-read=${internalSrcDir}`);
+  args.push(`--allow-fs-read=${blobRootDir}`);
+  args.push(`--allow-fs-write=${blobRootDir}`);
+
+  const policyPath = resolveConfiguredPath(
+    process.env.SANDBOXIFY_POLICY_PATH ?? "./sandboxify.policy.jsonc",
+  );
+  if (policyPath) {
+    args.push(`--allow-fs-read=${policyPath}`);
+  }
+
+  const manifestPath = resolveConfiguredPath(
+    process.env.SANDBOXIFY_MANIFEST_PATH ?? "./.sandboxify/exports.manifest.json",
+  );
+  if (manifestPath) {
+    args.push(`--allow-fs-read=${manifestPath}`);
+  }
 
   if (blobReadDir) {
     args.push(`--allow-fs-read=${blobReadDir}`);
+    args.push(`--allow-fs-write=${blobReadDir}`);
   }
 
   pushFsArgs(args, "--allow-fs-read", bucket.allowFsRead);
@@ -185,6 +301,14 @@ function buildPermissionArgs(bucket, blobReadDir) {
   if (bucket.allowInspector) args.push("--allow-inspector");
 
   return args;
+}
+
+function resolveConfiguredPath(value) {
+  if (typeof value !== "string" || value.length === 0) {
+    return null;
+  }
+
+  return path.resolve(process.cwd(), value);
 }
 
 function pushFsArgs(args, flag, value) {
@@ -218,6 +342,30 @@ function deserializeError(raw) {
   if (raw?.data) {
     error.data = raw.data;
   }
+  return error;
+}
+
+function serializeError(error) {
+  return {
+    name: error?.name ?? "Error",
+    message: error?.message ?? String(error),
+    stack: error?.stack,
+    code: error?.code,
+    data: error?.data,
+  };
+}
+
+function normalizeRequestError(client, error) {
+  if (client.exitReason) {
+    return client.exitReason;
+  }
+
+  if (error?.code === "EPIPE") {
+    return new Error(
+      `Sandbox process exited for bucket ${client.bucketName} (code=${client.proc.exitCode ?? "unknown"}, signal=${client.proc.signalCode ?? "unknown"})`,
+    );
+  }
+
   return error;
 }
 
@@ -273,20 +421,26 @@ function cleanupBlobStore(blobStore) {
   }
 }
 
-function preparePayload(op, payload, blobStore) {
+async function preparePayload(client, op, payload, blobStore) {
+  const encodedPayload = await encodeOutgoingPayload(client, payload);
+
   if (!blobStore?.enabled) {
-    return { payload, cleanupFiles: [] };
+    return { payload: encodedPayload, cleanupFiles: [] };
   }
 
   if (op === "call") {
-    return prepareBlobPayload(payload, "args", blobStore);
+    return prepareBlobPayload(encodedPayload, "args", blobStore);
   }
 
   if (op === "callMany") {
-    return prepareBlobPayload(payload, "argsList", blobStore);
+    return prepareBlobPayload(encodedPayload, "argsList", blobStore);
   }
 
-  return { payload, cleanupFiles: [] };
+  if (op === "construct" || op === "handleCall" || op === "handleInvoke") {
+    return prepareBlobPayload(encodedPayload, "args", blobStore);
+  }
+
+  return { payload: encodedPayload, cleanupFiles: [] };
 }
 
 function prepareBlobPayload(payload, key, blobStore) {
@@ -309,6 +463,54 @@ function prepareBlobPayload(payload, key, blobStore) {
     },
     cleanupFiles,
   };
+}
+
+async function encodeOutgoingPayload(client, payload) {
+  if (!payload || typeof payload !== "object") {
+    return payload;
+  }
+
+  const out = Array.isArray(payload) ? [] : {};
+  for (const [key, value] of Object.entries(payload)) {
+    out[key] = await encodeOutgoingValue(client, value);
+  }
+  return out;
+}
+
+async function encodeOutgoingValue(client, value) {
+  const remoteReference = getRemoteReference(value);
+  if (remoteReference) {
+    if (remoteReference.client !== client) {
+      throw new Error(
+        "Remote references can only be passed back to the bucket that owns them",
+      );
+    }
+
+    return remoteReference.serialize();
+  }
+
+  if (typeof value === "function") {
+    const handleId = client.registerLocalHandle(value);
+    return {
+      [CLIENT_REFERENCE_TAG]: 1,
+      handleId,
+      source: getFunctionSource(value),
+    };
+  }
+
+  if (Array.isArray(value)) {
+    return Promise.all(value.map((entry) => encodeOutgoingValue(client, entry)));
+  }
+
+  if (isPlainObject(value)) {
+    const out = {};
+    for (const [key, entry] of Object.entries(value)) {
+      out[key] = await encodeOutgoingValue(client, entry);
+    }
+    return out;
+  }
+
+  return value;
 }
 
 function encodeLargeBinaryValues(value, blobStore, cleanupFiles) {
@@ -383,4 +585,13 @@ function isPlainObject(value) {
     typeof value === "object" &&
     Object.getPrototypeOf(value) === Object.prototype
   );
+}
+
+function getFunctionSource(value) {
+  try {
+    const source = Function.prototype.toString.call(value);
+    return typeof source === "string" && source.length > 0 ? source : null;
+  } catch {
+    return null;
+  }
 }

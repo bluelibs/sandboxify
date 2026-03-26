@@ -6,7 +6,10 @@ const RUNTIME_MODULE_URL = new URL("../runtime/index.js", import.meta.url).href;
 
 export function createSandboxHooks({
   policyPath = "./sandboxify.policy.jsonc",
-  manifestPath = "./.sandboxify/exports.manifest.json",
+  manifestPath =
+    process.env.SANDBOXIFY_MANIFEST_PATH ??
+    "./.sandboxify/exports.manifest.json",
+  localBucket = null,
 } = {}) {
   if (process.env.SANDBOXIFY_DISABLE === "1") {
     return {
@@ -39,6 +42,16 @@ export function createSandboxHooks({
       const bucket = rawBucket ?? matcher.matchResolved(resolved.url, parentUrl);
 
       if (!bucket) {
+        return resolved;
+      }
+
+      if (localBucket && bucket === localBucket) {
+        debugLog("resolve-native", {
+          specifier,
+          bucket,
+          realUrl: resolved.url,
+          matchKind: rawBucket ? "raw" : "resolved",
+        });
         return resolved;
       }
 

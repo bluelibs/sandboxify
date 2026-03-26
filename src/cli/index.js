@@ -75,6 +75,12 @@ function runDoctor() {
   if (policy) {
     console.log(`- buckets: ${Object.keys(policy.buckets).length}`);
     console.log(`- package mappings: ${(policy.packageMappings ?? []).length}`);
+    console.log("- package ownership: canonical from packages");
+    console.log("- same-bucket imports: stay native inside the sandbox host");
+    console.log(
+      "- cross-bucket imports: bridge over RPC to the target bucket (requires allowChildProcess today)",
+    );
+    console.log("- cross-bucket cycles: unsupported");
   }
 
   if (warnings.length > 0) {
