@@ -1,18 +1,49 @@
 # sandboxify
 
-Sandbox selected dependencies in separate Node processes with Node’s Permission Model, while keeping ESM import callsites mostly unchanged.
+Sandbox selected Node dependencies in separate processes using Node's Permission Model, while keeping your app's import sites close to normal.
 
-## Quickstart (Node 25)
+`sandboxify` lets you decide which packages run in a restricted child process and what they can access: network, filesystem, child processes, workers, addons, and more.
 
 Requirements:
 
 - Node `25.x`
-- ESM app (`.mjs` or `"type": "module"`) for best compatibility
+- ESM app (`.mjs` or `"type": "module"`) for the smoothest experience
+
+## Why sandboxify?
+
+- Reduce the blast radius of third-party dependencies.
+- Keep policy decisions out of app code and in one JSONC file.
+- Preserve a familiar import-and-call workflow for function-oriented libraries.
+- Apply least-privilege rules per package or per importer path.
+- Keep a practical escape hatch with debug and bypass modes.
+
+## Best Fit
+
+`sandboxify` shines with function-oriented dependencies: packages that accept plain data and return plain data.
+
+Great candidates:
+
+- sanitizers, parsers, formatters, and helper libraries
+- compute-heavy or medium-latency dependency work
+- hot paths where the same function can be batched
+
+Poor candidates:
+
+- constructor-heavy libraries that expect fully transparent in-process instances
+- exported objects with methods
+- streams, sockets, file handles, and other native handles
+- packages that depend on shared in-process identity or mutable globals
+
+> `sandboxify` is a hardening layer, not a perfect VM boundary. Use least privilege, keep Node patched, and add OS or container isolation when you need stronger containment.
+
+## Quickstart (ESM)
+
+This example uses `sanitize-html` because it exports a plain function and returns plain data, which is exactly the shape `sandboxify` likes.
 
 Install:
 
 ```bash
-npm install sandboxify
+npm install sandboxify sanitize-html
 ```
 
 Create `sandboxify.policy.jsonc`:
@@ -20,28 +51,18 @@ Create `sandboxify.policy.jsonc`:
 ```jsonc
 {
   "buckets": {
-    "cpu_only": {
+    "html_only": {
       "allowNet": false,
       "allowFsRead": ["./node_modules"],
       "allowFsWrite": [],
       "allowChildProcess": false,
       "allowWorker": false,
-      "allowAddons": false,
-    },
-    "fs_ro_templates": {
-      "allowNet": false,
-      "allowFsRead": ["./node_modules", "./templates"],
-      "allowFsWrite": [],
-      "allowChildProcess": false,
-      "allowWorker": false,
-      "allowAddons": false,
-    },
+      "allowAddons": false
+    }
   },
   "packages": {
-    "markdown-it": "cpu_only",
-    "handlebars": "cpu_only",
-    "nunjucks": "fs_ro_templates",
-  },
+    "sanitize-html": "html_only"
+  }
 }
 ```
 
@@ -59,96 +80,162 @@ registerHooks(
 );
 ```
 
-Build the export manifest (recommended before run):
+Create `src/index.mjs`:
+
+```js
+import sanitizeHtml from "sanitize-html";
+
+const dirty = `
+  <p>Hello <strong>world</strong> <script>alert("nope")</script></p>
+`;
+
+const clean = await sanitizeHtml(dirty, {
+  allowedTags: ["p", "strong", "em", "a"],
+});
+
+console.log(clean);
+```
+
+Build the manifest:
 
 ```bash
 npx sandboxify build-manifest
 ```
 
-Run your app with the preload hook:
+Run your app:
 
 ```bash
 node --import ./register.mjs ./src/index.mjs
 ```
 
-## CJS usage (`require` flow)
+Important:
 
-For CommonJS entrypoints, preload the CJS register:
+- Sandboxed function exports are async, even if the original library function was synchronous.
+- The manifest is strongly recommended and effectively required for named ESM imports, because loader stubs need to know export names ahead of time.
+- Rebuild the manifest after dependency installs, upgrades, or export-surface changes.
 
-```bash
-node -r sandboxify/register-cjs ./src/index.cjs
+## How It Works
+
+1. The loader matches an import against `sandboxify.policy.jsonc`.
+2. For matching packages, it serves a generated ESM stub instead of importing the dependency directly.
+3. The stub talks to a per-bucket sandbox host process started with Node permission flags.
+4. Function calls cross the process boundary over RPC, and results come back as structured-cloneable values.
+
+## Mental Model
+
+- Function exports become async call proxies.
+- Constructable exports can be instantiated with async construction: `const instance = await new Thing(...)`.
+- Function proxies also expose `fn.batch(argsList)` for high-frequency hot paths.
+- Constructed remote instances support async method calls and plain own-field snapshots after construction and method calls.
+- Plain cloneable value exports can be loaded once and used as values.
+- Unsupported shapes still stay unsupported: streams, sockets, complex realm-bound objects, and fully transparent live object graphs are not a fit.
+- Import-time side effects still happen inside the sandbox and must obey the bucket's permissions.
+
+## Class Example
+
+Class exports are supported, but construction is async across the process boundary:
+
+```js
+import { Counter } from "some-class-lib";
+
+const counter = await new Counter(2);
+console.log(counter.value);
+
+console.log(await counter.increment(3));
+console.log(counter.value);
 ```
 
-Local development with this repo layout:
+This works best when:
 
-```bash
-node -r ./register-cjs.cjs ./src/index.cjs
+- constructor args are structured-cloneable
+- instance methods return structured-cloneable values
+- instance state is plain data on the instance itself
+
+This works less well when the class relies on:
+
+- static methods or static mutable state
+- property writes from the caller side
+- `instanceof`, custom prototypes, or identity-sensitive behavior
+- native handles or event-emitter style live objects
+
+## Batch Example
+
+If you call the same sandboxed function repeatedly, batch it:
+
+```js
+import sanitizeHtml from "sanitize-html";
+
+const results = await sanitizeHtml.batch([
+  ["<p>first<script>bad()</script></p>"],
+  [
+    '<a href="https://example.com" onclick="nope()">link</a>',
+    {
+      allowedTags: ["a"],
+      allowedAttributes: { a: ["href"] },
+    },
+  ],
+  ["<strong>third</strong>"],
+]);
 ```
 
-Practical CJS behavior:
+This collapses many logical calls into one RPC `callMany` request and is usually the single biggest performance win for chatty workloads.
 
-- Package selection still follows `sandboxify.policy.jsonc`
-- `require("pkg")` returns a sandbox proxy object
-- Function exports can be called and return Promises
-- Existing ESM flow (`--import .../register.mjs`) is unchanged
+## Policy Reference
 
-How CJS works under the hood (default mode):
+Each package maps to a bucket, and each bucket describes what the sandboxed process may do.
 
-1. `register-cjs.cjs` patches `Module._load`.
-2. For matched packages, it routes calls to a bucketed sandbox host over IPC.
-3. `require("pkg")` returns callable proxy functions.
-4. Calling a proxy function performs RPC `load` (once) + RPC `call` (per invocation).
-5. Return values are resolved asynchronously (Promise-based CJS API surface).
+| Key | Type | Meaning |
+| --- | --- | --- |
+| `allowNet` | `boolean` | Allow network access from the sandboxed dependency. |
+| `allowFsRead` | `string[] \| "*"` | Allow reads from these paths. Relative paths are resolved from your app cwd. |
+| `allowFsWrite` | `string[] \| "*"` | Allow writes to these paths. |
+| `allowChildProcess` | `boolean` | Allow child process creation. |
+| `allowWorker` | `boolean` | Allow `Worker` usage. |
+| `allowAddons` | `boolean` | Allow native addons. |
+| `allowWasi` | `boolean` | Allow WASI. |
+| `allowInspector` | `boolean` | Allow inspector APIs. |
+| `env` | `Record<string, string>` | Extra env vars merged into the sandbox process. |
 
-### Experimental sync-ish CJS calls
+Notes:
 
-For CJS-heavy apps that prefer sync callsites, an experimental mode is available:
+- `packages` supports exact matches and simple wildcard suffixes like `"@acme/render-*": "renderers"`.
+- `importerRules` lets you route the same dependency to different buckets depending on who imported it.
+- `allowFsRead` should usually include `./node_modules` for the package being sandboxed.
 
-```bash
-SANDBOXIFY_CJS_SYNC_EXPERIMENTAL=1 node -r sandboxify/register-cjs ./src/index.cjs
-```
+## Importer Rules
 
-What it does:
-
-- keeps the sandbox process boundary
-- attempts synchronous function calls for JSON-compatible and `Buffer` args/returns
-- preserves the default async CJS mode when the flag is not set
-
-How `SYNC_EXPERIMENTAL` is achieved:
-
-1. Enable with `SANDBOXIFY_CJS_SYNC_EXPERIMENTAL=1`.
-2. The CJS loader still intercepts `require`, but function calls are no longer routed to the long-lived async IPC client.
-3. Each call is encoded into a strict wire format (JSON + `Buffer` as base64).
-4. A blocking broker call executes via `spawnSync` into `src/host/sync-call.js` with the bucket's Node permission flags.
-5. The sync host imports the target module, invokes the export, encodes the result, and exits.
-6. The caller receives a synchronous return value (or synchronous throw).
-
-Why this is explicitly experimental:
-
-- very high per-call overhead (process spawn + module load + serialization every call)
-- only payloads that can be safely encoded/decoded are supported
-- intentionally not transparent for complex runtime objects or handles
-
-Caveats (experimental):
-
-- implemented via a blocking per-call sandbox process broker, so latency/throughput are significantly worse than async mode
-- only supports function exports whose args/returns are JSON-compatible values or `Buffer`
-- unsupported payloads (streams, sockets, class instances, custom prototypes) throw explicit errors
-- behavior can change in future releases; do not rely on this for performance-sensitive paths
-
-## Importer-based policy rules (`importerRules`)
-
-In addition to top-level `packages` matching, you can target based on _who imports_ a package:
+Use `importerRules` when the same dependency should get different permissions depending on the importing module.
 
 ```jsonc
 {
+  "buckets": {
+    "restricted_net": {
+      "allowNet": false,
+      "allowFsRead": ["./node_modules"],
+      "allowFsWrite": [],
+      "allowChildProcess": false,
+      "allowWorker": false,
+      "allowAddons": false
+    },
+    "open_net": {
+      "allowNet": true,
+      "allowFsRead": ["./node_modules"],
+      "allowFsWrite": [],
+      "allowChildProcess": false,
+      "allowWorker": false,
+      "allowAddons": false
+    }
+  },
+  "packages": {
+    "some-http-lib": "restricted_net"
+  },
   "importerRules": [
     {
-      "importer": "file:///app/src/restricted/*",
-      "specifier": "sandboxed-lib",
-      "bucket": "cpu_only",
-    },
-  ],
+      "importer": "file:///app/src/open/*",
+      "specifier": "some-http-lib",
+      "bucket": "open_net"
+    }
+  ]
 }
 ```
 
@@ -156,15 +243,61 @@ Rule precedence:
 
 - more specific `specifier` wins
 - then more specific `importer` wins
-- fallback goes to `packages` mapping
+- fallback goes to `packages`
 
-## TypeScript guidance
+## CommonJS (`require`) Usage
+
+Preload the CJS register:
+
+```bash
+node -r sandboxify/register-cjs ./src/index.cjs
+```
+
+Inside this repo during local development:
+
+```bash
+node -r ./register-cjs.cjs ./src/index.cjs
+```
+
+Example:
+
+```js
+const sanitizeHtml = require("sanitize-html").default;
+
+(async () => {
+  const clean = await sanitizeHtml("<p>Hello<script>bad()</script></p>");
+  console.log(clean);
+})();
+```
+
+What to expect:
+
+- `require("pkg")` returns a proxy object, not a perfectly transparent clone of the original module.
+- Function exports still work well and return Promises in default mode.
+- Constructable exports can be used with async construction: `const value = await new ExportedClass(...)`.
+- The CJS path is still function-first; non-function values are not transparently mirrored.
+
+### Experimental sync-ish CJS mode
+
+```bash
+SANDBOXIFY_CJS_SYNC_EXPERIMENTAL=1 node -r sandboxify/register-cjs ./src/index.cjs
+```
+
+This mode:
+
+- keeps the sandbox process boundary
+- tries to preserve synchronous call sites for JSON-compatible and `Buffer` args and returns
+- is much slower per call because it uses a blocking broker process
+
+Use it only when CJS compatibility matters more than performance.
+
+## TypeScript
 
 Recommended setup:
 
-- Compile TS to JS first (`tsc`, swc, esbuild, etc.)
-- Run sandboxify against emitted JS (`dist/`), not raw `.ts`
-- Build/refresh manifest after install/build changes: `npx sandboxify build-manifest`
+- compile TypeScript to JavaScript first
+- run `sandboxify` against emitted JS in `dist/`
+- rebuild the manifest after install or build changes
 
 Example scripts:
 
@@ -179,161 +312,108 @@ Example scripts:
 }
 ```
 
-TS caveats:
+Notes:
 
-- No source-map-level policy matching: policy matches runtime specifiers
-- CJS proxy behavior is runtime JS behavior; typings may need local wrappers
-- Keep app-side APIs async-friendly when crossing sandbox boundaries
+- policy matching happens on runtime specifiers, not source maps
+- keep app-side boundaries async-friendly
+- if you rely on named ESM imports, regenerate the manifest when exports change
 
 ## CLI
 
-Build or refresh manifest:
+Build or refresh the manifest:
 
 ```bash
 npx sandboxify build-manifest
 ```
 
-Run compatibility checks:
+Run basic checks:
 
 ```bash
 npx sandboxify doctor
 ```
 
-`doctor` helps identify packages that need extra permissions (for example addons/process spawning) or are a poor fit for strict RPC mode.
+CLI options:
 
-## ESM-first + RPC constraints
+- `--policy <path>`: policy JSON or JSONC path
+- `--manifest <path>`: manifest path
 
-`sandboxify` is ESM-first. The default flow uses ESM loader hooks and generated stubs so imports like `import x from "pkg"` stay close to normal.
+What `build-manifest` does:
 
-Sandboxed package calls cross a process boundary, so keep APIs RPC-friendly:
+- resolves packages matched by your policy
+- imports them once to discover export names
+- writes `./.sandboxify/exports.manifest.json`
 
-- Prefer structured-cloneable args/returns (plain objects, arrays, strings, numbers, booleans, null, typed arrays)
-- Avoid stream/socket/file-handle return types
-- Avoid relying on prototype identity (`instanceof`) across boundaries
+Why it matters:
 
-Batching optimization for hot paths:
+- valid ESM stubs need to know export names ahead of time
+- stale manifests are a common reason named imports drift or fail
 
-- sandboxed function proxies support `fn.batch([[...args], [...args]])`
-- this collapses many RPC calls into a single `callMany` request
-- ideal when one dependency function is called repeatedly with small payloads
+## Debugging and Bypass
 
-Example:
+Useful env vars:
 
-```js
-import { add } from "sandboxed-lib";
-
-const values = await add.batch([
-  [1, 2],
-  [3, 4],
-  [5, 6],
-]);
-```
-
-## Explicit limitations (transparency boundaries)
-
-Some fully transparent behavior is impossible with current Node constraints:
-
-- CJS `require()` is synchronous, while sandbox module load/call is RPC and asynchronous
-- CJS interception therefore prioritizes callable exports; non-function value exports are not transparently mirrored
-- Cross-process identity is not preserved (`instanceof`, class prototypes, symbols tied to realm)
-- Native handles (streams, sockets, file descriptors) cannot be passed through RPC as-is
-- Side-effect timing may differ because sandboxed module initialization is deferred until first RPC load/call
-- Experimental `SANDBOXIFY_CJS_SYNC_EXPERIMENTAL=1` mode blocks the caller and uses a high-overhead sync broker per call
-
-Network side effects:
-
-- if a package performs network operations at import-time, `allowNet: false` fails the import immediately
-- with `allowNet: true` (Node 25+), that same import-time path can succeed
-
-## Security caveat (important)
-
-Node’s Permission Model is **risk reduction**, not a perfect sandbox. Treat `sandboxify` as a hardening layer for dependencies, not a guarantee against malicious code. Keep Node patched, use least-privilege bucket policies, and consider OS/container isolation for stronger boundaries.
-
-## Debug and bypass
-
-- `SANDBOXIFY_DISABLE=1` disables sandboxing entirely (useful for troubleshooting)
-- `SANDBOXIFY_DEBUG=1` enables verbose logs (bucket matching, resolved URLs, sandbox PID, permission denials)
+| Env var | Purpose |
+| --- | --- |
+| `SANDBOXIFY_DISABLE=1` | Disable sandboxing entirely. Great for isolating policy vs app bugs. |
+| `SANDBOXIFY_DEBUG=1` | Print loader and runtime debug logs. |
+| `SANDBOXIFY_CJS_SYNC_EXPERIMENTAL=1` | Enable sync-ish CJS mode. |
+| `SANDBOXIFY_IPC_BLOB_THRESHOLD_BYTES=<n>` | Offload large `Buffer` or `Uint8Array` arguments to temp blob files before RPC. |
+| `SANDBOXIFY_POLICY_PATH=<path>` | Override the default policy path. |
+| `SANDBOXIFY_MANIFEST_PATH=<path>` | Override the default manifest path. |
 
 Examples:
 
 ```bash
 SANDBOXIFY_DEBUG=1 node --import ./register.mjs ./src/index.mjs
 SANDBOXIFY_DISABLE=1 node --import ./register.mjs ./src/index.mjs
+SANDBOXIFY_IPC_BLOB_THRESHOLD_BYTES=262144 node --import ./register.mjs ./src/index.mjs
 ```
 
-## Benchmarks (MVP)
+Common gotchas:
 
-Run smoke profile locally:
+- Named ESM imports missing or wrong: rebuild the manifest.
+- Permission denial at import time: the dependency does work during module initialization, not just during function calls.
+- Weird class or prototype behavior: wrap that dependency behind your own plain-data adapter instead of sandboxing it directly.
+
+## Performance Notes
+
+`sandboxify` adds real process-boundary overhead, so use it where the security tradeoff makes sense.
+
+Practical rules:
+
+- The smaller the call, the more visible the overhead.
+- The chunkier the dependency work, the less the sandbox tax matters.
+- Batching is the best lever for repeated small calls.
+- Large binary arguments can benefit from `SANDBOXIFY_IPC_BLOB_THRESHOLD_BYTES`.
+- The blob offload path currently helps arguments, not return payloads.
+- Return values are best kept plain and reasonably sized.
+
+Benchmarks in this repo:
 
 ```bash
 npm run bench:smoke
-```
-
-Run fuller matrix (heavier):
-
-```bash
 npm run bench:full
 ```
-
-The harness compares:
-
-- `native`: direct in-process import/call
-- `bypass`: loader path enabled with `SANDBOXIFY_DISABLE=1`
-- `sandbox`: full sandbox runtime enabled
-
-It also includes a batched RPC scenario:
-
-- `rpc-batch-noop-<N>` to measure `fn.batch(...)` style amortization of RPC overhead
 
 Outputs:
 
 - JSON: `bench/results/<timestamp>-<profile>.json`
-- Latest alias: `bench/results/latest-<profile>.json`
-- Summary: `bench/REPORT.md`
+- latest alias: `bench/results/latest-<profile>.json`
+- markdown summary: `bench/REPORT.md`
 
-## Performance tuning (experimental)
+## Limitations
 
-For large binary arguments (`Buffer`/`Uint8Array`), you can enable an IPC blob offload path:
+Current transparency boundaries:
 
-```bash
-SANDBOXIFY_IPC_BLOB_THRESHOLD_BYTES=262144 node --import ./register.mjs ./src/index.mjs
-```
+- sandboxed function exports are async in the default ESM and CJS flow
+- class exports use async construction (`await new ExportedClass(...)`) and are not fully transparent
+- exported objects with methods are usually a poor fit unless you wrap them as plain functions
+- streams, sockets, file handles, and other native handles do not cross the RPC boundary intact
+- cross-process identity is not preserved (`instanceof`, prototypes, realm-bound symbols)
+- module side-effect timing can shift because sandbox loading is deferred until the first sandbox interaction
+- caller-side property writes and static class behavior are not synchronized across the boundary
+- experimental sync CJS mode is intentionally high overhead
 
-Behavior:
+## Security Caveat
 
-- For `call` RPC arguments above the threshold, runtime writes the binary payload to a temp blob file.
-- IPC message sends a lightweight reference object instead of the full bytes.
-- Sandbox host reads the blob and replaces it with the original binary value before invoking the export.
-
-Notes:
-
-- Set threshold to `0` to disable offload.
-- This currently optimizes **arguments** only (not return payloads).
-- Best for request-heavy large-binary call patterns; for tiny payloads, default IPC is usually better.
-
-To view the latest report quickly:
-
-```bash
-cat ./bench/REPORT.md
-```
-
-Latest smoke result file from this run:
-
-- `bench/results/2026-03-02T15-10-13-815Z-smoke.json`
-- Alias: `bench/results/latest-smoke.json`
-
-## Implemented coverage (this repository)
-
-- ESM loader path with manifest-backed static export stubs
-- Runtime bucket pools + permissioned sandbox host RPC (`hello/load/call`)
-- Policy matcher with package mapping + importer-aware rules (`importerRules`)
-- CJS register path:
-  - default async proxy mode
-  - env-gated sync-like experimental mode
-- Integration tests for:
-  - successful sandbox call paths (ESM + CJS)
-  - denied child process
-  - denied/allowed network
-  - importer-based routing differences for same dependency
-  - import-time side-effect network behavior
-- Benchmark harness with `native` / `bypass` / `sandbox` comparisons and markdown+json output
+Node's Permission Model is risk reduction, not a perfect sandbox. Treat `sandboxify` as a dependency hardening layer, not a full isolation guarantee. Keep Node patched, use least-privilege bucket policies, and add OS or container isolation when the threat model demands it.

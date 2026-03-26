@@ -1,6 +1,8 @@
 import fs from "node:fs";
 
 const moduleCache = new Map();
+const instanceCache = new Map();
+let nextInstanceId = 1;
 const HELLO_RESPONSE = {
   version: 1,
   nodeVersion: process.version,
@@ -9,6 +11,7 @@ const HELLO_RESPONSE = {
     supportsLoad: true,
     supportsCall: true,
     supportsCallMany: true,
+    supportsConstruct: true,
   },
 };
 
@@ -39,6 +42,18 @@ function dispatch(op, payload) {
 
   if (op === "callMany") {
     return callExportMany(payload);
+  }
+
+  if (op === "construct") {
+    return constructExport(payload);
+  }
+
+  if (op === "instanceCall") {
+    return callInstanceMember(payload);
+  }
+
+  if (op === "releaseInstance") {
+    return releaseInstance(payload);
   }
 
   throw new Error(`Unknown RPC operation: ${op}`);
@@ -89,6 +104,20 @@ function callExport({ moduleKey, exportName, args, hasBlobRefs = false }) {
   const rawArgs = Array.isArray(args) ? args : [];
   const resolvedArgs = hasBlobRefs ? decodeBlobReferences(rawArgs) : rawArgs;
   return wrapRpcResult(target(...resolvedArgs), (result) => ({ result }));
+}
+
+function constructExport({ moduleKey, exportName, args, hasBlobRefs = false }) {
+  const namespace = getLoadedModuleNamespace(moduleKey);
+  const target = namespace[exportName];
+  if (typeof target !== "function") {
+    throw new Error(`Export \"${exportName}\" is not constructable`);
+  }
+
+  const rawArgs = Array.isArray(args) ? args : [];
+  const resolvedArgs = hasBlobRefs ? decodeBlobReferences(rawArgs) : rawArgs;
+  return wrapRpcResult(Reflect.construct(target, resolvedArgs), (instance) =>
+    createConstructResponse(instance),
+  );
 }
 
 function callExportMany({
@@ -180,6 +209,36 @@ async function finishCallExportManyEmptyAsync(
   return packBatchResults(results);
 }
 
+function callInstanceMember({
+  instanceId,
+  memberName,
+  args,
+  hasBlobRefs = false,
+}) {
+  const instance = getLoadedInstance(instanceId);
+  const target = instance?.[memberName];
+  if (typeof target !== "function") {
+    throw new Error(`Remote instance member \"${memberName}\" is not callable`);
+  }
+
+  const rawArgs = Array.isArray(args) ? args : [];
+  const resolvedArgs = hasBlobRefs ? decodeBlobReferences(rawArgs) : rawArgs;
+  return wrapRpcResult(target.apply(instance, resolvedArgs), (result) => ({
+    result,
+    state: captureInstanceState(instance),
+  }));
+}
+
+function releaseInstance({ instanceId }) {
+  if (!Number.isInteger(instanceId) || instanceId < 1) {
+    return { released: false };
+  }
+
+  return {
+    released: instanceCache.delete(instanceId),
+  };
+}
+
 function getModuleNamespace(key, url) {
   const cached = moduleCache.get(key);
   if (cached) {
@@ -207,6 +266,15 @@ function getLoadedModuleNamespace(moduleKey) {
   }
 
   return namespace;
+}
+
+function getLoadedInstance(instanceId) {
+  const instance = instanceCache.get(instanceId);
+  if (!instance) {
+    throw new Error(`Remote instance not found: ${instanceId}`);
+  }
+
+  return instance;
 }
 
 function sendRpcValue(id, value) {
@@ -294,7 +362,10 @@ function isThenable(value) {
 
 function describeExport(value) {
   if (typeof value === "function") {
-    return { kind: "function" };
+    return {
+      kind: "function",
+      constructable: isConstructable(value),
+    };
   }
 
   if (isCloneable(value)) {
@@ -307,9 +378,70 @@ function describeExport(value) {
   };
 }
 
+function createConstructResponse(instance) {
+  const instanceId = nextInstanceId++;
+  instanceCache.set(instanceId, instance);
+
+  return {
+    instanceId,
+    methods: collectInstanceMethodNames(instance),
+    state: captureInstanceState(instance),
+  };
+}
+
+function collectInstanceMethodNames(instance) {
+  const names = new Set();
+  let current = Object.getPrototypeOf(instance);
+
+  while (current && current !== Object.prototype) {
+    for (const [name, descriptor] of Object.entries(
+      Object.getOwnPropertyDescriptors(current),
+    )) {
+      if (name === "constructor") {
+        continue;
+      }
+
+      if (typeof descriptor.value === "function") {
+        names.add(name);
+      }
+    }
+
+    current = Object.getPrototypeOf(current);
+  }
+
+  return [...names];
+}
+
+function captureInstanceState(instance) {
+  const state = {};
+
+  for (const [key, value] of Object.entries(instance)) {
+    if (typeof value === "function" || !isCloneable(value)) {
+      continue;
+    }
+
+    state[key] = value;
+  }
+
+  return state;
+}
+
 function isCloneable(value) {
   try {
     structuredClone(value);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function isConstructable(value) {
+  if (typeof value !== "function") {
+    return false;
+  }
+
+  try {
+    Reflect.construct(String, [], value);
     return true;
   } catch {
     return false;

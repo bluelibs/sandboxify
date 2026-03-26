@@ -1,5 +1,12 @@
 import { RpcClient } from "./rpc-client.js";
 
+const remoteInstanceRegistry =
+  typeof FinalizationRegistry === "function"
+    ? new FinalizationRegistry(({ client, instanceId }) => {
+        client.request("releaseInstance", { instanceId }).catch(() => {});
+      })
+    : null;
+
 export class RuntimePool {
   constructor(policy) {
     this.policy = policy;
@@ -85,39 +92,12 @@ function createNamespaceProxy(client, moduleKey, descriptors, exportNames) {
     }
 
     if (descriptor.kind === "function") {
-      const callSingle = (...args) => {
-        const payload = {
-          moduleKey,
-          exportName,
-        };
-        if (args.length > 0) {
-          payload.args = args;
-        }
-
-        return client.request("call", payload).then((response) => response?.result);
-      };
-
-      callSingle.batch = (argsList) => {
-        const payload = {
-          moduleKey,
-          exportName,
-        };
-        const normalizedArgsList = Array.isArray(argsList) ? argsList : [];
-
-        if (normalizedArgsList.length > 0) {
-          if (allCallsUseEmptyArgs(normalizedArgsList)) {
-            payload.emptyArgsCount = normalizedArgsList.length;
-          } else {
-            payload.argsList = normalizedArgsList;
-          }
-        }
-
-        return client
-          .request("callMany", payload)
-          .then((response) => decodeBatchResults(response));
-      };
-
-      namespace[exportName] = callSingle;
+      namespace[exportName] = createCallableExportProxy(
+        client,
+        moduleKey,
+        exportName,
+        descriptor,
+      );
       continue;
     }
 
@@ -134,6 +114,190 @@ function createNamespaceProxy(client, moduleKey, descriptors, exportNames) {
   }
 
   return namespace;
+}
+
+function createCallableExportProxy(client, moduleKey, exportName, descriptor) {
+  const target = function sandboxifyRemoteCallable() {};
+
+  const callSingle = (...args) => {
+    const payload = {
+      moduleKey,
+      exportName,
+    };
+    if (args.length > 0) {
+      payload.args = args;
+    }
+
+    return client.request("call", payload).then((response) => response?.result);
+  };
+
+  const batch = (argsList) => {
+    const payload = {
+      moduleKey,
+      exportName,
+    };
+    const normalizedArgsList = Array.isArray(argsList) ? argsList : [];
+
+    if (normalizedArgsList.length > 0) {
+      if (allCallsUseEmptyArgs(normalizedArgsList)) {
+        payload.emptyArgsCount = normalizedArgsList.length;
+      } else {
+        payload.argsList = normalizedArgsList;
+      }
+    }
+
+    return client
+      .request("callMany", payload)
+      .then((response) => decodeBatchResults(response));
+  };
+
+  const construct = (...args) => {
+    if (!descriptor.constructable) {
+      throw new TypeError(`${exportName} is not a constructor`);
+    }
+
+    const payload = {
+      moduleKey,
+      exportName,
+    };
+    if (args.length > 0) {
+      payload.args = args;
+    }
+
+    return client
+      .request("construct", payload)
+      .then((response) => createRemoteInstanceProxy(client, response));
+  };
+
+  return new Proxy(target, {
+    apply(_target, _thisArg, args) {
+      return callSingle(...args);
+    },
+    construct(_target, args) {
+      return construct(...args);
+    },
+    get(_target, prop, receiver) {
+      if (prop === "batch") {
+        return batch;
+      }
+
+      return Reflect.get(target, prop, receiver);
+    },
+  });
+}
+
+function createRemoteInstanceProxy(client, response) {
+  const instanceId = response?.instanceId;
+  const state = normalizeRemoteState(response?.state);
+  const methodNames = new Set(
+    Array.isArray(response?.methods)
+      ? response.methods.filter((entry) => typeof entry === "string")
+      : [],
+  );
+  const methodCache = new Map();
+  const target = Object.create(null);
+
+  const proxy = new Proxy(target, {
+    get(_target, prop, receiver) {
+      if (prop === "then") {
+        return undefined;
+      }
+
+      if (prop === "__sandboxifyRemoteInstanceId") {
+        return instanceId;
+      }
+
+      if (typeof prop !== "string") {
+        return Reflect.get(target, prop, receiver);
+      }
+
+      if (methodNames.has(prop)) {
+        if (methodCache.has(prop)) {
+          return methodCache.get(prop);
+        }
+
+        const method = (...args) =>
+          client
+            .request("instanceCall", {
+              instanceId,
+              memberName: prop,
+              args,
+            })
+            .then((methodResponse) => {
+              syncRemoteState(state, methodResponse?.state);
+              return methodResponse?.result;
+            });
+
+        methodCache.set(prop, method);
+        return method;
+      }
+
+      if (Object.hasOwn(state, prop)) {
+        return state[prop];
+      }
+
+      return Reflect.get(target, prop, receiver);
+    },
+    has(_target, prop) {
+      return (
+        (typeof prop === "string" &&
+          (methodNames.has(prop) || Object.hasOwn(state, prop))) ||
+        Reflect.has(target, prop)
+      );
+    },
+    ownKeys() {
+      return [...new Set([...methodNames, ...Object.keys(state)])];
+    },
+    getOwnPropertyDescriptor(_target, prop) {
+      if (typeof prop === "string" && methodNames.has(prop)) {
+        return {
+          configurable: true,
+          enumerable: true,
+          writable: false,
+          value: methodCache.get(prop) ?? undefined,
+        };
+      }
+
+      if (typeof prop === "string" && Object.hasOwn(state, prop)) {
+        return {
+          configurable: true,
+          enumerable: true,
+          writable: false,
+          value: state[prop],
+        };
+      }
+
+      return undefined;
+    },
+    set(_target, prop) {
+      throw new Error(
+        `Remote instance properties are read-only${typeof prop === "string" ? `: ${prop}` : ""}`,
+      );
+    },
+  });
+
+  remoteInstanceRegistry?.register(proxy, { client, instanceId });
+  return proxy;
+}
+
+function normalizeRemoteState(rawState) {
+  if (!rawState || typeof rawState !== "object") {
+    return {};
+  }
+
+  return { ...rawState };
+}
+
+function syncRemoteState(targetState, nextState) {
+  const normalizedState = normalizeRemoteState(nextState);
+
+  for (const key of Object.keys(targetState)) {
+    if (!Object.hasOwn(normalizedState, key)) {
+      delete targetState[key];
+    }
+  }
+
+  Object.assign(targetState, normalizedState);
 }
 
 function allCallsUseEmptyArgs(argsList) {

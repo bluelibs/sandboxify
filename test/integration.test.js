@@ -220,6 +220,37 @@ test(
 );
 
 test(
+  "integration: sandboxed class exports support construction and instance methods",
+  { concurrency: false },
+  async () => {
+    const fixture = createTempProjectFromFixture("sandboxed-lib-basic");
+    try {
+      materializePolicy(fixture.projectDir, { allowNet: false });
+
+      const manifestResult = await buildManifest(fixture.projectDir);
+      assert.equal(
+        manifestResult.code,
+        0,
+        `build-manifest failed (timedOut=${manifestResult.timedOut})\nstdout:\n${manifestResult.stdout}\nstderr:\n${manifestResult.stderr}`,
+      );
+
+      const result = await runWithLoader(fixture.projectDir, "class-check.mjs");
+      assert.equal(
+        result.code,
+        0,
+        `app failed (timedOut=${result.timedOut})\nstdout:\n${result.stdout}\nstderr:\n${result.stderr}`,
+      );
+      assert.match(stripAnsi(result.stdout), /CLASS_VALUE\s+2/);
+      assert.match(stripAnsi(result.stdout), /CLASS_INC\s+5/);
+      assert.match(stripAnsi(result.stdout), /CLASS_VALUE_AFTER\s+5/);
+      assert.match(stripAnsi(result.stdout), /CLASS_DESC\s+value:5/);
+    } finally {
+      fixture.cleanup();
+    }
+  },
+);
+
+test(
   "integration: large binary batch args can use IPC blob offload",
   { concurrency: false },
   async () => {
@@ -335,6 +366,40 @@ test(
         `app failed (timedOut=${result.timedOut})\nstdout:\n${result.stdout}\nstderr:\n${result.stderr}`,
       );
       assert.match(stripAnsi(result.stdout), /CJS_RESULT\s+5/);
+    } finally {
+      fixture.cleanup();
+    }
+  },
+);
+
+test(
+  "integration: CJS require flow supports async class construction",
+  { concurrency: false },
+  async () => {
+    const fixture = createTempProjectFromFixture("sandboxed-lib-basic");
+    try {
+      materializePolicy(fixture.projectDir, { allowNet: false });
+
+      const manifestResult = await buildManifest(fixture.projectDir);
+      assert.equal(
+        manifestResult.code,
+        0,
+        `build-manifest failed (timedOut=${manifestResult.timedOut})\nstdout:\n${manifestResult.stdout}\nstderr:\n${manifestResult.stderr}`,
+      );
+
+      const result = await runWithCjsRegister(
+        fixture.projectDir,
+        "cjs-class-check.cjs",
+      );
+      assert.equal(
+        result.code,
+        0,
+        `app failed (timedOut=${result.timedOut})\nstdout:\n${result.stdout}\nstderr:\n${result.stderr}`,
+      );
+      assert.match(stripAnsi(result.stdout), /CJS_CLASS_VALUE\s+4/);
+      assert.match(stripAnsi(result.stdout), /CJS_CLASS_INC\s+6/);
+      assert.match(stripAnsi(result.stdout), /CJS_CLASS_VALUE_AFTER\s+6/);
+      assert.match(stripAnsi(result.stdout), /CJS_CLASS_DESC\s+value:6/);
     } finally {
       fixture.cleanup();
     }

@@ -6,6 +6,12 @@ const Module = require("node:module");
 
 const CJS_SYNC_EXPERIMENTAL_ENABLED =
   process.env.SANDBOXIFY_CJS_SYNC_EXPERIMENTAL === "1";
+const remoteInstanceRegistry =
+  typeof FinalizationRegistry === "function"
+    ? new FinalizationRegistry(({ client, instanceId }) => {
+        client.request("releaseInstance", { instanceId }).catch(() => {});
+      })
+    : null;
 
 function installCjsRequireHook() {
   const policyPath =
@@ -130,9 +136,35 @@ class CjsRuntimePool {
         return functionCache.get(exportName);
       }
 
-      const fn = (...args) => invoke(exportName, args);
-      functionCache.set(exportName, fn);
-      return fn;
+      const proxyFn = createAsyncCallableProxy({
+        exportName,
+        invoke: (args) => invoke(exportName, args),
+        construct: async (args) => {
+          await ensureLoaded();
+
+          const descriptors = this.exportDescriptorsByKey.get(cacheKey) ?? {};
+          const descriptor = descriptors[exportName];
+          if (!descriptor) {
+            throw new Error(
+              `Export "${String(exportName)}" was not found for ${specifier}`,
+            );
+          }
+
+          if (descriptor.kind !== "function" || !descriptor.constructable) {
+            throw new TypeError(`${String(exportName)} is not a constructor`);
+          }
+
+          const response = await client.request("construct", {
+            moduleKey,
+            exportName,
+            args: Array.isArray(args) ? args : [],
+          });
+
+          return createRemoteInstanceProxy(client, response);
+        },
+      });
+      functionCache.set(exportName, proxyFn);
+      return proxyFn;
     };
 
     const target = Object.create(null);
@@ -275,6 +307,133 @@ class CjsRuntimePool {
     this.loadPromiseByKey.clear();
     this.exportDescriptorsByKey.clear();
   }
+}
+
+function createAsyncCallableProxy({ exportName, invoke, construct }) {
+  const target = function sandboxifyRemoteCallable() {};
+
+  return new Proxy(target, {
+    apply(_target, _thisArg, args) {
+      return invoke(args);
+    },
+    construct(_target, args) {
+      return construct(args);
+    },
+  });
+}
+
+function createRemoteInstanceProxy(client, response) {
+  const instanceId = response?.instanceId;
+  const state = normalizeRemoteState(response?.state);
+  const methodNames = new Set(
+    Array.isArray(response?.methods)
+      ? response.methods.filter((entry) => typeof entry === "string")
+      : [],
+  );
+  const methodCache = new Map();
+  const target = Object.create(null);
+
+  const proxy = new Proxy(target, {
+    get(_target, prop, receiver) {
+      if (prop === "then") {
+        return undefined;
+      }
+
+      if (prop === "__sandboxifyRemoteInstanceId") {
+        return instanceId;
+      }
+
+      if (typeof prop !== "string") {
+        return Reflect.get(target, prop, receiver);
+      }
+
+      if (methodNames.has(prop)) {
+        if (methodCache.has(prop)) {
+          return methodCache.get(prop);
+        }
+
+        const method = (...args) =>
+          client
+            .request("instanceCall", {
+              instanceId,
+              memberName: prop,
+              args: Array.isArray(args) ? args : [],
+            })
+            .then((methodResponse) => {
+              syncRemoteState(state, methodResponse?.state);
+              return methodResponse?.result;
+            });
+
+        methodCache.set(prop, method);
+        return method;
+      }
+
+      if (Object.hasOwn(state, prop)) {
+        return state[prop];
+      }
+
+      return Reflect.get(target, prop, receiver);
+    },
+    has(_target, prop) {
+      return (
+        (typeof prop === "string" &&
+          (methodNames.has(prop) || Object.hasOwn(state, prop))) ||
+        Reflect.has(target, prop)
+      );
+    },
+    ownKeys() {
+      return [...new Set([...methodNames, ...Object.keys(state)])];
+    },
+    getOwnPropertyDescriptor(_target, prop) {
+      if (typeof prop === "string" && methodNames.has(prop)) {
+        return {
+          configurable: true,
+          enumerable: true,
+          writable: false,
+          value: methodCache.get(prop) ?? undefined,
+        };
+      }
+
+      if (typeof prop === "string" && Object.hasOwn(state, prop)) {
+        return {
+          configurable: true,
+          enumerable: true,
+          writable: false,
+          value: state[prop],
+        };
+      }
+
+      return undefined;
+    },
+    set(_target, prop) {
+      throw new Error(
+        `Remote instance properties are read-only${typeof prop === "string" ? `: ${prop}` : ""}`,
+      );
+    },
+  });
+
+  remoteInstanceRegistry?.register(proxy, { client, instanceId });
+  return proxy;
+}
+
+function normalizeRemoteState(rawState) {
+  if (!rawState || typeof rawState !== "object") {
+    return {};
+  }
+
+  return { ...rawState };
+}
+
+function syncRemoteState(targetState, nextState) {
+  const normalizedState = normalizeRemoteState(nextState);
+
+  for (const key of Object.keys(targetState)) {
+    if (!Object.hasOwn(normalizedState, key)) {
+      delete targetState[key];
+    }
+  }
+
+  Object.assign(targetState, normalizedState);
 }
 
 class CjsSyncInvoker {
