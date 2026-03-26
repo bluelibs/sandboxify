@@ -2,6 +2,7 @@
   "name": "sandboxify",
   "version": "0.0.0",
   "description": "Dependency sandboxing for Node 25+",
+  "license": "Apache-2.0",
   "type": "module",
   "main": "./src/index.js",
   "bin": {
