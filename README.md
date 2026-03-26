@@ -25,10 +25,7 @@ That gives you a useful middle ground:
 
 ## Who This Is For
 
-`sandboxify` works best when the dependency API looks like this:
-
-- plain function in
-- plain data out
+`sandboxify` works best when the dependency API stays understandable across a process boundary.
 
 Good fits:
 
@@ -36,20 +33,22 @@ Good fits:
 - parsers and formatters
 - markdown or template helpers
 - utility libraries with data-in/data-out APIs
+- object-oriented libraries that mostly interact through methods and ordinary properties
 - heavier dependency work where a little RPC overhead is acceptable
 
 Less ideal fits:
 
-- libraries centered around live objects with methods
 - streams, sockets, file handles, and native resources
 - code that depends on `instanceof`, shared in-process identity, or mutable globals
 - packages that expect perfectly transparent class behavior
 
-Class exports are supported, but only partially:
+Class and object exports are supported, but not perfectly transparently:
 
 - construction is async: `const instance = await new MyClass(...)`
-- instance methods work over RPC
-- plain own fields are mirrored as snapshots
+- instance and object methods work over RPC
+- ordinary properties can be read and passed back into other sandboxed calls
+- mutation through methods works in the sandboxed object
+- direct caller-side property writes do not sync back
 - `instanceof` and full prototype identity do not survive the process boundary
 
 ## Before You Start
@@ -176,7 +175,7 @@ That async construction is not an ESM thing. It is a process-boundary thing.
 2. If it does, it replaces the original import with a generated stub.
 3. That stub talks to a sandbox host process for the matching bucket.
 4. Calls cross the process boundary over RPC.
-5. Results come back as structured-cloneable values.
+5. Results come back as cloneable values or remote object handles, depending on the export shape.
 
 You still write app code. `sandboxify` handles the transport layer.
 
@@ -187,8 +186,9 @@ If you keep this model in your head, the package feels much less surprising:
 - function exports become async call proxies
 - `fn.batch(argsList)` is available for repeated calls to the same function
 - class construction becomes async: `await new MyClass(...)`
-- instance methods work, but they are remote calls
-- plain values can work if they are structured-cloneable
+- object and instance methods work, but they are remote calls
+- plain values stay plain when they are structured-cloneable
+- object-shaped exports can come back as remote handles instead of cloned data
 - identity-sensitive behavior does not stay transparent across processes
 
 Good question to ask yourself:
@@ -619,9 +619,9 @@ These are the important limits to understand before adopting `sandboxify`:
 - sandboxed calls are async by default
 - class support is partial, not fully transparent
 - `instanceof` does not survive the process boundary
-- caller-side property writes do not sync back to remote instances
+- caller-side property writes do not sync back to remote objects or instances
 - static class behavior is not synchronized across the boundary
-- exported objects with methods are usually a poor fit
+- exported objects with methods are supported, but still carry process-boundary semantics
 - streams, sockets, file handles, and similar native handles do not cross the boundary intact
 - module side effects still happen, and they still need the right permissions
 
