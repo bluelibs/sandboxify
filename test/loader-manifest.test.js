@@ -241,6 +241,81 @@ test(
 );
 
 test(
+  "createSandboxHooks sandboxes local files by resolved URL when the raw specifier spelling differs",
+  { concurrency: false },
+  () => {
+    const tmpDir = createTmpDir("sandboxify-loader-resolved-");
+
+    try {
+      writeJson(path.join(tmpDir, "sandboxify.policy.jsonc"), {
+        buckets: {
+          cpu_only: {
+            allowNet: false,
+            allowFsRead: ["./src"],
+            allowFsWrite: [],
+            allowChildProcess: false,
+            allowWorker: false,
+            allowAddons: false,
+          },
+        },
+        packages: {
+          "./src/dep.mjs": "cpu_only",
+        },
+      });
+
+      const depPath = path.join(tmpDir, "src", "dep.mjs");
+      const depUrl = withCwd(tmpDir, () => pathToFileURL(path.resolve("./src/dep.mjs")).href);
+      const parentUrl = withCwd(tmpDir, () =>
+        pathToFileURL(path.resolve("./app/main.mjs")).href,
+      );
+      writeFile(depPath, "export const named = true;\n");
+      writeJson(path.join(tmpDir, "manifest.json"), {
+        version: 1,
+        entriesByUrl: {
+          [depUrl]: {
+            specifier: "./src/dep.mjs",
+            exportNames: ["named", "default"],
+          },
+        },
+        entriesBySpecifier: {
+          "./src/dep.mjs": {
+            realUrl: depUrl,
+            exportNames: ["named", "default"],
+          },
+        },
+      });
+
+      withCwd(tmpDir, () => {
+        const hooks = createSandboxHooks({
+          policyPath: "./sandboxify.policy.jsonc",
+          manifestPath: "./manifest.json",
+        });
+
+        const resolved = hooks.resolve(
+          "../src/dep.mjs",
+          { parentURL: parentUrl },
+          () => ({ url: depUrl }),
+        );
+
+        assert.match(resolved.url, /^sandboxify:/);
+
+        const loaded = hooks.load(resolved.url, {}, () => {
+          throw new Error("unexpected nextLoad");
+        });
+
+        assert.match(loaded.source, /export const named = __sandboxifyModule\["named"\];/);
+        assert.match(
+          loaded.source,
+          new RegExp(depUrl.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")),
+        );
+      });
+    } finally {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    }
+  },
+);
+
+test(
   "createSandboxHooks reuses manifest export metadata across buckets for the same module",
   { concurrency: false },
   () => {

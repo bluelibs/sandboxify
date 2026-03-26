@@ -1,5 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import path from "node:path";
+import { pathToFileURL } from "node:url";
 import { createPolicyMatcher, normalizePolicy } from "../src/policy/index.js";
 
 test("policy matcher prefers exact over wildcard and longest wildcard prefix", () => {
@@ -22,6 +24,40 @@ test("policy matcher prefers exact over wildcard and longest wildcard prefix", (
   assert.equal(matcher.match("pkg/any"), "wildcardBucket");
   assert.equal(matcher.match("pkg/sub/path"), "longWildcardBucket");
   assert.equal(matcher.match("other"), null);
+});
+
+test("policy matcher falls back to the resolved file URL for local exact entries", () => {
+  const depPath = path.resolve(process.cwd(), "src/dep.mjs");
+  const depUrl = pathToFileURL(depPath).href;
+  const policy = normalizePolicy({
+    buckets: {
+      localBucket: {},
+    },
+    packages: {
+      "./src/dep.mjs": "localBucket",
+    },
+  });
+
+  const matcher = createPolicyMatcher(policy);
+
+  assert.equal(matcher.match(depPath, "file:///app/main.mjs", depUrl), "localBucket");
+});
+
+test("policy matcher falls back to the resolved file URL for local wildcard entries", () => {
+  const depPath = path.resolve(process.cwd(), "src/nested/dep.mjs");
+  const depUrl = pathToFileURL(depPath).href;
+  const policy = normalizePolicy({
+    buckets: {
+      localBucket: {},
+    },
+    packages: {
+      "./src/*": "localBucket",
+    },
+  });
+
+  const matcher = createPolicyMatcher(policy);
+
+  assert.equal(matcher.match(depPath, "file:///app/main.mjs", depUrl), "localBucket");
 });
 
 test("policy matcher supports importerRules with deterministic precedence", () => {
@@ -65,6 +101,54 @@ test("policy matcher supports importerRules with deterministic precedence", () =
     matcher.match("sandboxed-lib", "file:///app/src/open/module.mjs"),
     "defaultBucket",
   );
+});
+
+test("policy matcher keeps raw local specifier matches ahead of resolved fallback matches", () => {
+  const depPath = path.resolve(process.cwd(), "src/dep.mjs");
+  const depUrl = pathToFileURL(depPath).href;
+  const policy = normalizePolicy({
+    buckets: {
+      rawBucket: {},
+      resolvedBucket: {},
+    },
+    packages: {
+      "./src/dep.mjs": "resolvedBucket",
+      [depPath]: "rawBucket",
+    },
+  });
+
+  const matcher = createPolicyMatcher(policy);
+
+  assert.equal(matcher.match(depPath, "file:///app/main.mjs", depUrl), "rawBucket");
+});
+
+test("policy matcher supports importerRules with resolved local specifier fallback", () => {
+  const depPath = path.resolve(process.cwd(), "src/dep.mjs");
+  const depUrl = pathToFileURL(depPath).href;
+  const policy = normalizePolicy({
+    buckets: {
+      localBucket: {},
+      fallbackBucket: {},
+    },
+    packages: {
+      "some-package": "fallbackBucket",
+    },
+    importerRules: [
+      {
+        importer: "file:///app/restricted/*",
+        specifier: "./src/dep.mjs",
+        bucket: "localBucket",
+      },
+    ],
+  });
+
+  const matcher = createPolicyMatcher(policy);
+
+  assert.equal(
+    matcher.match(depPath, "file:///app/restricted/main.mjs", depUrl),
+    "localBucket",
+  );
+  assert.equal(matcher.match(depPath, "file:///app/open/main.mjs", depUrl), null);
 });
 
 test("policy normalization handles arrays, env values, and importer rule precedence", () => {

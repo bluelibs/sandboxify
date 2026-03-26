@@ -28,45 +28,30 @@ export function createSandboxHooks({
 
   return {
     resolve(specifier, context, nextResolve) {
-      const bucket = matcher.match(specifier, context.parentURL ?? "");
-      if (!bucket) {
+      const parentUrl = context.parentURL ?? "";
+      const rawBucket = matcher.matchRaw(specifier, parentUrl);
+
+      if (!rawBucket && !matcher.hasResolvedSpecifierPatterns) {
         return nextResolve(specifier, context);
       }
 
       const resolved = nextResolve(specifier, context);
-      const recordKey = `${bucket}\u0000${specifier}\u0000${resolved.url}`;
-      let sandboxUrl = sandboxUrlByRecordKey.get(recordKey);
+      const bucket = rawBucket ?? matcher.matchResolved(resolved.url, parentUrl);
 
-      if (!sandboxUrl) {
-        const id = hashRecord(bucket, specifier, resolved.url);
-        const exportNames = getExportNames(
-          exportNamesByModuleKey,
-          manifest,
-          resolved.url,
-          specifier,
-        );
-        sandboxUrl = `sandboxify:${encodeURIComponent(bucket)}:${id}`;
-        sandboxUrlByRecordKey.set(recordKey, sandboxUrl);
-        recordsByUrl.set(sandboxUrl, {
-          bucket,
-          specifier,
-          realUrl: resolved.url,
-          exportNames,
-          source: generateStubSource({
-            bucket,
-            specifier,
-            realUrl: resolved.url,
-            exportNames,
-          }),
-        });
+      if (!bucket) {
+        return resolved;
       }
 
-      debugLog("resolve", { specifier, bucket, realUrl: resolved.url, url: sandboxUrl });
-
-      return {
-        shortCircuit: true,
-        url: sandboxUrl,
-      };
+      return createSandboxResolution({
+        bucket,
+        specifier,
+        resolved,
+        manifest,
+        exportNamesByModuleKey,
+        sandboxUrlByRecordKey,
+        recordsByUrl,
+        matchKind: rawBucket ? "raw" : "resolved",
+      });
     },
 
     load(url, context, nextLoad) {
@@ -93,6 +78,57 @@ export function createSandboxHooks({
         source: record.source,
       };
     },
+  };
+}
+
+function createSandboxResolution({
+  bucket,
+  specifier,
+  resolved,
+  manifest,
+  exportNamesByModuleKey,
+  sandboxUrlByRecordKey,
+  recordsByUrl,
+  matchKind,
+}) {
+  const recordKey = `${bucket}\u0000${specifier}\u0000${resolved.url}`;
+  let sandboxUrl = sandboxUrlByRecordKey.get(recordKey);
+
+  if (!sandboxUrl) {
+    const id = hashRecord(bucket, specifier, resolved.url);
+    const exportNames = getExportNames(
+      exportNamesByModuleKey,
+      manifest,
+      resolved.url,
+      specifier,
+    );
+    sandboxUrl = `sandboxify:${encodeURIComponent(bucket)}:${id}`;
+    sandboxUrlByRecordKey.set(recordKey, sandboxUrl);
+    recordsByUrl.set(sandboxUrl, {
+      bucket,
+      specifier,
+      realUrl: resolved.url,
+      exportNames,
+      source: generateStubSource({
+        bucket,
+        specifier,
+        realUrl: resolved.url,
+        exportNames,
+      }),
+    });
+  }
+
+  debugLog("resolve", {
+    specifier,
+    bucket,
+    realUrl: resolved.url,
+    url: sandboxUrl,
+    matchKind,
+  });
+
+  return {
+    shortCircuit: true,
+    url: sandboxUrl,
   };
 }
 

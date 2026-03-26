@@ -231,6 +231,10 @@ Batching is often the biggest performance win when a sandboxed function is calle
 
 You can sandbox a local file too, not just packages from `node_modules`.
 
+For local-looking entries, `packages` matches the file itself, not just one exact relative spelling.
+That means a policy entry like `./src/pdf-service.mjs` still applies if another module reaches the same file through `../app/src/pdf-service.mjs`.
+Literal raw matches still win if you deliberately configure both.
+
 Policy:
 
 ```jsonc
@@ -259,12 +263,24 @@ import { multiply } from "./local-libs/file-sandboxed-lib.mjs";
 console.log(await multiply(3, 4));
 ```
 
+Equivalent import from somewhere else:
+
+```js
+import { multiply } from "../app/local-libs/file-sandboxed-lib.mjs";
+
+console.log(await multiply(3, 4));
+```
+
+Both imports resolve to the same file, so both land in the same sandbox bucket.
+
 ## Policy Basics
 
 Your policy has two main parts:
 
 - `buckets`: what permissions a sandbox gets
 - `packages`: which dependency goes into which bucket
+  For package names this matches the raw import specifier.
+  For local file specifiers it matches the raw specifier first, then the resolved file URL as a fallback.
 
 Example:
 
@@ -304,6 +320,7 @@ Example:
 
 - include `./node_modules` in `allowFsRead` for sandboxed packages
 - include local directories too if you sandbox local file dependencies
+- local file entries in `packages` use raw specifier matching first, then resolved-file fallback
 - start restrictive and open only what a dependency really needs
 - JSONC is supported so you can leave comments in the policy
 
@@ -351,6 +368,7 @@ Rule precedence:
 - more specific `specifier` wins
 - then more specific `importer` wins
 - fallback goes to `packages`
+- raw specifier matches win over resolved-file fallback matches
 
 ## ESM vs CJS
 
