@@ -16,7 +16,7 @@ function stripComments(input) {
 
     if (inString) {
       output += char;
-      if (char === "\\\\") {
+      if (char === "\\") {
         output += next ?? "";
         index += 2;
         continue;

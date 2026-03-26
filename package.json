@@ -1,7 +1,7 @@
 {
   "name": "sandboxify",
-  "version": "0.1.0",
-  "description": "MVP ESM dependency sandboxing for Node 25",
+  "version": "0.0.0",
+  "description": "Dependency sandboxing for Node 25+",
   "type": "module",
   "main": "./src/index.js",
   "bin": {

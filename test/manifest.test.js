@@ -47,6 +47,7 @@ test(
         path.join(tmpDir, "node_modules", "fixture-lib", "index.mjs"),
         'export const named = 42; export default function hello() { return "hi"; }\n',
       );
+      writeFile(path.join(tmpDir, "node_modules", "README.txt"), "hi\n");
 
       writeFile(
         path.join(tmpDir, "sandboxify.policy.jsonc"),

@@ -28,10 +28,9 @@ export async function buildManifest({
       continue;
     }
 
-    const exportNames = Object.keys(namespace);
-    if ("default" in namespace && !exportNames.includes("default")) {
-      exportNames.unshift("default");
-    }
+    const exportNames = Reflect.ownKeys(namespace).filter(
+      (entry) => typeof entry === "string",
+    );
 
     const entry = {
       package: packageNameFromSpecifier(specifier),

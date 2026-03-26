@@ -174,10 +174,6 @@ function generateStubSource({ bucket, specifier, realUrl, exportNames }) {
     );
   }
 
-  if (!hasDefaultExport && namedExports.length === 0) {
-    lines.push("export {};");
-  }
-
   return `${lines.join("\n")}\n`;
 }
 

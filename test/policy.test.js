@@ -66,3 +66,80 @@ test("policy matcher supports importerRules with deterministic precedence", () =
     "defaultBucket",
   );
 });
+
+test("policy normalization handles arrays, env values, and importer rule precedence", () => {
+  const policy = normalizePolicy({
+    buckets: {
+      exactBucket: {
+        allowNet: ["example.com", "api.example.com"],
+        allowFsRead: "*",
+        allowFsWrite: false,
+        allowChildProcess: 1,
+        allowWorker: 0,
+        allowAddons: "yes",
+        allowWasi: "",
+        allowInspector: true,
+        env: {
+          PORT: 3000,
+          ENABLED: false,
+        },
+      },
+      anyBucket: {},
+      prefixBucket: {},
+      prefixImporterBucket: {},
+      exactImporterBucket: {},
+    },
+    packages: {},
+    importerRules: [
+      {
+        importer: "*",
+        specifier: "*",
+        bucket: "anyBucket",
+      },
+      {
+        importer: "*",
+        specifier: "pkg/*",
+        bucket: "prefixBucket",
+      },
+      {
+        importer: "file:///app/*",
+        specifier: "pkg/deep/*",
+        bucket: "prefixImporterBucket",
+      },
+      {
+        importer: "file:///app/exact.mjs",
+        specifier: "pkg/deep/*",
+        bucket: "exactImporterBucket",
+      },
+      {
+        importer: "*",
+        specifier: "pkg/exact",
+        bucket: "exactBucket",
+      },
+    ],
+  });
+
+  assert.deepEqual(policy.buckets.exactBucket.allowNet, [
+    "example.com",
+    "api.example.com",
+  ]);
+  assert.equal(policy.buckets.exactBucket.allowFsRead, "*");
+  assert.equal(policy.buckets.exactBucket.allowFsWrite, false);
+  assert.deepEqual(policy.buckets.exactBucket.env, {
+    PORT: "3000",
+    ENABLED: "false",
+  });
+
+  const matcher = createPolicyMatcher(policy);
+
+  assert.equal(matcher.match("other-lib", "file:///elsewhere.mjs"), "anyBucket");
+  assert.equal(matcher.match("pkg/exact", "file:///elsewhere.mjs"), "exactBucket");
+  assert.equal(
+    matcher.match("pkg/deep/module", "file:///app/other.mjs"),
+    "prefixImporterBucket",
+  );
+  assert.equal(
+    matcher.match("pkg/deep/module", "file:///app/exact.mjs"),
+    "exactImporterBucket",
+  );
+});

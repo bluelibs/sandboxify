@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "generatedAt": "2026-03-26T07:07:46.952Z",
+  "nodeVersion": "v25.7.0",
+  "entriesByUrl": {
+    "file:///private/var/folders/0l/zh8wvnnj5mv74m2tgngv4h4c0000gn/T/sandboxify-manifest-fallback-nfJnZZ/node_modules/fixture-lib/index.mjs": {
+      "package": "fixture-lib",
+      "specifier": "fixture-lib",
+      "realUrl": "file:///private/var/folders/0l/zh8wvnnj5mv74m2tgngv4h4c0000gn/T/sandboxify-manifest-fallback-nfJnZZ/node_modules/fixture-lib/index.mjs",
+      "exportNames": [
+        "answer"
+      ],
+      "generatedAt": "2026-03-26T07:07:46.952Z"
+    }
+  },
+  "entriesBySpecifier": {
+    "fixture-lib": {
+      "package": "fixture-lib",
+      "realUrl": "file:///private/var/folders/0l/zh8wvnnj5mv74m2tgngv4h4c0000gn/T/sandboxify-manifest-fallback-nfJnZZ/node_modules/fixture-lib/index.mjs",
+      "exportNames": [
+        "answer"
+      ]
+    }
+  }
+}

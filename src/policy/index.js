@@ -162,19 +162,37 @@ function normalizeImporterRule({ importerPattern, specifierPattern, bucket }) {
 }
 
 function compareImporterRules(a, b) {
-  if (a.specifierMatcher.type !== b.specifierMatcher.type) {
-    return a.specifierMatcher.type === "exact" ? -1 : 1;
+  const specifierTypeRankDiff =
+    patternTypeRank(a.specifierMatcher.type) -
+    patternTypeRank(b.specifierMatcher.type);
+  if (specifierTypeRankDiff !== 0) {
+    return specifierTypeRankDiff;
   }
 
   if (a.specifierMatcher.anchorLength !== b.specifierMatcher.anchorLength) {
     return b.specifierMatcher.anchorLength - a.specifierMatcher.anchorLength;
   }
 
-  if (a.importerMatcher.type !== b.importerMatcher.type) {
-    return a.importerMatcher.type === "exact" ? -1 : 1;
+  const importerTypeRankDiff =
+    patternTypeRank(a.importerMatcher.type) -
+    patternTypeRank(b.importerMatcher.type);
+  if (importerTypeRankDiff !== 0) {
+    return importerTypeRankDiff;
   }
 
   return b.importerMatcher.anchorLength - a.importerMatcher.anchorLength;
+}
+
+function patternTypeRank(type) {
+  if (type === "exact") {
+    return 0;
+  }
+
+  if (type === "prefix") {
+    return 1;
+  }
+
+  return 2;
 }
 
 function toPatternMatcher(pattern) {
